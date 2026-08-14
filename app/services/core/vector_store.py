@@ -5,23 +5,36 @@ from typing import List, Dict, Any, Optional
 from app.config.settings import settings
 from app.services.providers.openai_service import OpenAIProvider
 from app.services.providers.avalai_service import AvalaiProvider
+from app.services.providers.openrouter_service import OpenRouterProvider
+from app.services.providers.local_embedding_service import HTTPChromaEmbeddingFunction
 
 class VectorStoreService:
     def __init__(self):
-        # Initialize the appropriate embedding function based on provider
-        if settings.PROVIDER == "openai":
+        # Initialize the appropriate embedding function based on the effective embedding provider.
+        # EMBEDDING_PROVIDER (when set) takes precedence, so embeddings can be
+        # decoupled from the chat provider (e.g. local Persian model + OpenRouter chat).
+        eff = settings.effective_embedding_provider
+        if eff == "local":
+            self.embedding_function = HTTPChromaEmbeddingFunction(settings.LOCAL_EMBEDDING_API_URL)
+        elif eff == "openai":
             self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
                 api_key=settings.OPENAI_API_KEY,
                 model_name=settings.OPENAI_EMBEDDING_MODEL
             )
-        elif settings.PROVIDER == "avalai":
+        elif eff == "avalai":
             self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
                 api_key=settings.AVALAI_API_KEY,
                 api_base=settings.AVALAI_BASE_URL,
                 model_name=settings.OPENAI_EMBEDDING_MODEL
             )
+        elif eff == "openrouter":
+            self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
+                api_key=settings.OPENROUTER_API_KEY,
+                api_base=settings.OPENROUTER_BASE_URL,
+                model_name=settings.OPENROUTER_EMBEDDING_MODEL
+            )
         else:
-            raise ValueError(f"Unsupported provider: {settings.PROVIDER}")
+            raise ValueError(f"Unsupported embedding provider: {eff}")
             
         self.client = chromadb.PersistentClient(
             path=settings.CHROMA_PERSIST_DIRECTORY,

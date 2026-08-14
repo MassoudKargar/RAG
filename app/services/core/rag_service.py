@@ -5,6 +5,8 @@ from app.config.settings import settings
 from app.services.core.vector_store import VectorStoreService
 from app.services.providers.openai_service import OpenAIProvider
 from app.services.providers.avalai_service import AvalaiProvider
+from app.services.providers.openrouter_service import OpenRouterProvider
+from app.services.providers.local_embedding_service import LocalEmbeddingProvider
 from app.services.base import BaseAIProvider
 
 class RAGService:
@@ -12,18 +14,39 @@ class RAGService:
         self.collection_name = "RAG_COLLECTION"
         self.vector_store = VectorStoreService()
         self._provider = None
+        self._embedding_provider = None
 
     @property
     def provider(self) -> BaseAIProvider:
-        """Lazy load the provider based on settings"""
+        """Lazy load the chat provider based on settings"""
         if self._provider is None:
             if settings.PROVIDER == "openai":
                 self._provider = OpenAIProvider()
             elif settings.PROVIDER == "avalai":
                 self._provider = AvalaiProvider()
+            elif settings.PROVIDER == "openrouter":
+                self._provider = OpenRouterProvider()
             else:
                 raise ValueError("Invalid provider selected")
         return self._provider
+
+    @property
+    def embedding_provider(self):
+        """Lazy load the embedding provider.
+
+        When EMBEDDING_PROVIDER=local, a local HuggingFace model is used for
+        embeddings (decoupled from the chat provider, e.g. OpenRouter for chat).
+        Otherwise it falls back to the chat provider so existing behaviour is
+        preserved when EMBEDDING_PROVIDER is unset.
+        """
+        if self._embedding_provider is None:
+            eff = settings.effective_embedding_provider
+            if eff == "local":
+                self._embedding_provider = LocalEmbeddingProvider()
+            else:
+                # Reuse the chat provider for embeddings (backward compatible)
+                self._embedding_provider = self.provider
+        return self._embedding_provider
 
     def initialize_collection(self) -> None:
         """Initialize the vector store collection"""

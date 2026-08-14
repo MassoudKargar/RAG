@@ -1,0 +1,7 @@
+# Embedding service (local Persian model) — separate venv from the main RAG API
+fastapi
+uvicorn
+requests
+torch
+numpy
+transformers

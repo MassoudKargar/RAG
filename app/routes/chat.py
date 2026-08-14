@@ -14,8 +14,8 @@ async def create_chat_completion(request: ChatCompletionRequest):
         if not last_message:
             raise HTTPException(status_code=400, detail="No user message found in the conversation")
         
-        # Create embedding for the last user message using the configured provider
-        embedding = rag_service.provider.create_embedding(last_message.content)
+        # Create embedding for the last user message using the embedding provider
+        embedding = rag_service.embedding_provider.create_embedding(last_message.content)
         search_results = rag_service.search_similar_documents(embedding)
         
         # Build context from search results

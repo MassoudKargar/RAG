@@ -28,8 +28,8 @@ async def add_document(document: Document):
 @router.post("/search_documents", response_model=List[SearchResult])
 async def search_documents(query: Query):
     try:
-        # Use the configured provider for embeddings
-        embedding = rag_service.provider.create_embedding(query.text)
+        # Use the configured embedding provider for embeddings
+        embedding = rag_service.embedding_provider.create_embedding(query.prompt)
         results = rag_service.search_similar_documents(embedding)
         search_results = []
         for i in range(len(results['ids'][0])):

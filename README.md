@@ -56,7 +56,9 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000
 - حفظ فرمت پاسخ‌دهی مشابه با OpenAI
 - کافیست `base_url` را در کلاینت OpenAI خود تغییر دهید
 - دسترسی آسان به API از داخل ایران با استفاده از AvalAI بدون نیاز به VPN
-- امکان انتخاب بین OpenAI و AvalAI با تنظیم ساده در فایل .env
+- امکان انتخاب بین OpenAI، AvalAI و OpenRouter با تنظیم ساده در فایل .env
+- پشتیبانی از OpenRouter برای دسترسی به مدل‌های متنوع مثل Nemotron، Llama و ... بدون نیاز به کلید OpenAI
+- امکان جدا کردن امبدینگ از مدل چت: با `EMBEDDING_PROVIDER=local` و `LOCAL_EMBEDDING_MODEL=xmanii/maux-gte-persian` می‌توانید از مدل امبدینگ محلی فارسی برای ریتریو استفاده کنید در حالی که چت از OpenRouter انجام می‌شود
 
 ## 📚 مستندات API
 
@@ -231,6 +233,34 @@ curl -X POST "http://localhost:8000/v1/chat/completions" \
   }'
 ```
 
+## 🏋️ Running the local embedding service (Persian model)
+
+For best Persian retrieval, you can run a **local** embedding microservice that
+serves the `xmanii/maux-gte-persian` model (a GTE model fine-tuned for Farsi).
+It runs in its **own venv** with its own packages, independent of the main API:
+
+```bash
+# 1. Create & use a dedicated venv with the ML stack
+python3 -m venv embedding_service/.venv
+embedding_service/.venv/bin/pip install -r embedding_service/requirements.txt
+
+# 2. Start the embedding microservice (separate process)
+embedding_service/.venv/bin/uvicorn embedding_service.main:app   --host 127.0.0.1 --port 8010
+
+# 3. In your main API .env, decouple embeddings from chat:
+PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-...
+EMBEDDING_PROVIDER=local
+LOCAL_EMBEDDING_API_URL=http://127.0.0.1:8010/embed
+LOCAL_EMBEDDING_MODEL=xmanii/maux-gte-persian
+```
+
+The main RAG API then uses OpenRouter for chat and the local service for
+embeddings (storage **and** queries — kept in the same vector space).
+
+> If `EMBEDDING_PROVIDER` is left unset, embeddings follow `PROVIDER` for
+> backward compatibility (e.g. `openrouter` -> OpenRouter embeddings).
+
 ## 🔄 OpenAI Compatibility
 
 The API is designed to be a drop-in replacement for OpenAI's API with added RAG capabilities:
@@ -239,6 +269,8 @@ The API is designed to be a drop-in replacement for OpenAI's API with added RAG 
 - Supports both streaming and non-streaming responses
 - Maintains the same response format as OpenAI
 - Simply change the `base_url` in your existing OpenAI client
+- Supports OpenRouter as a provider — set `PROVIDER=openrouter` and your `OPENROUTER_API_KEY` to use models like `nvidia/nemotron` through OpenRouter without needing an OpenAI key
+- Embeddings are decoupled from chat: set `EMBEDDING_PROVIDER=local` to use a local Persian embedding model (`LOCAL_EMBEDDING_MODEL=xmanii/maux-gte-persian`) running in a **separate microservice**, while chat still comes from your chosen provider (e.g. OpenRouter). See the "Running the local embedding service" section below.
 
 ## 📚 API Reference
 
