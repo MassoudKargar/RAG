@@ -1,0 +1,15 @@
+# Environment variables - never commit
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.env
+
+# ChromaDB
+chroma_db/
+
+# Documentation (FA files)
+docs/fa/
