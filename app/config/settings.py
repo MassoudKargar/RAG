@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     PROVIDER: Literal["openai", "avalai", "openrouter"] = "openai"
     
     # OpenAI Settings
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
     CHAT_MODEL: str = "gpt-4o-mini"
     
@@ -22,14 +22,22 @@ class Settings(BaseSettings):
     OPENROUTER_EMBEDDING_MODEL: str = "openai/text-embedding-3-small"
     
     # Local Embedding Settings / امبدینگ محلی با HuggingFace
-    # وقتی EMBEDDING_PROVIDER=local باشد، مدل sentence-transformers زیر برای امبدینگ بارگذاری می‌شود
+    # وقتی EMBEDDING_PROVIDER=local باشد، مدل sentence-transformers زیر برای امبدینگ بارگذاری میشود
     EMBEDDING_PROVIDER: Optional[Literal["openai", "avalai", "openrouter", "local"]] = None
     LOCAL_EMBEDDING_MODEL: str = "xmanii/maux-gte-persian"
-    LOCAL_EMBEDDING_API_URL: str = "http://127.0.0.1:8010/embed"
+    LOCAL_EMBEDDING_API_URL: str = "http://127.0.0.1:9010/embed"
     
     # Vector Store Settings
     CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
+    
+    # RAG Search Settings
     RAG_SEARCH_LIMIT: int = 3
+    RAG_RETRIEVAL_K: int = 10  # Number of results to retrieve from vector DB
+    RAG_FINAL_K: int = 3       # Number of results to send to LLM
+    
+    # Document Chunking Settings
+    RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)
+    RAG_CHUNK_OVERLAP: int = 100   # Characters of overlap between chunks
     
     # System Settings
     SYSTEM_PROMPT: str = (

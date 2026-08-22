@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routes import vector_db, chat
+from app.routes import vector_db, chat, analysis
 import logging
 from app.services.core.rag_service import rag_service
 
@@ -22,10 +22,29 @@ async def startup_event():
 # Include routers with tags
 app.include_router(vector_db.router, prefix="/v1/vector_db", tags=["Vector Database"])
 app.include_router(chat.router, prefix="/v1", tags=["Chat"])
+app.include_router(analysis.router, prefix="/v1", tags=["Analysis"])
 
 @app.get("/", tags=["Root"])
 async def root():
     return {"message": "Welcome to the Maux API"}
+
+@app.get("/v1/health", tags=["Health"])
+async def health_check():
+    """Basic health check endpoint."""
+    try:
+        collection_count = rag_service.vector_store.get_collection_count(rag_service.collection_name)
+        return {
+            "status": "healthy",
+            "rag_service": "initialized",
+            "vector_store": "connected",
+            "documents_in_collection": collection_count,
+        }
+    except Exception as e:
+        return {
+            "status": "degraded",
+            "vector_store": "error",
+            "error": str(e),
+        }
 
 if __name__ == "__main__":
     import uvicorn

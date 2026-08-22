@@ -6,3 +6,7 @@ pydantic
 pydantic-settings
 python-dotenv
 requests
+
+# Development / Testing
+pytest
+httpx

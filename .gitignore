@@ -1,9 +1,24 @@
-# ignore pycache
+# Ignore pycache
 __pycache__
+*.pyc
 
+# ChromaDB and runtime artifacts
 chroma_db
+chroma_db_test
+chroma_db_e2e
+.chroma_db
+.pytest_cache
 
 # Environment variables
 .env
 .env.*
 !.env.example
+
+# Python venvs
+.venv
+venv
+env
+
+# IDE files
+.vscode
+.idea
