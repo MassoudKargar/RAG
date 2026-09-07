@@ -113,13 +113,12 @@ class ChunkerService:
         """
         text = text.replace("\r\n", "\n").replace("\r", "\n")
         paragraphs: List[Tuple[int, int, str]] = []
-        cursor = 0
-        for match in re.finditer(r"[^\n](?:[^\n]*\n?)*", text):
+        # A paragraph is a run of non-blank lines; blank lines ("\n\n") split it.
+        for match in re.finditer(r"[^\n]+(?:\n[^\n]+)*", text):
             start, end = match.start(), match.end()
             para = text[start:end].strip()
             if para and para != "\n":
                 paragraphs.append((start, start + len(para), para))
-            cursor = end
         if not paragraphs and text.strip():
             paragraphs.append((0, len(text.strip()), text.strip()))
         return paragraphs
@@ -223,6 +222,7 @@ class ChunkerService:
         current_chunk_start = 0  # position in the normalized paragraph stream
         current_chunk_size = 0
         current_section: Optional[str] = None
+        current_has_body = False
         chunk_index = 0
 
         def make_chunk(chunk_text: str, start_pos: int) -> Chunk:
@@ -251,17 +251,25 @@ class ChunkerService:
         first_para = True
 
         for start, end, para in paragraphs:
-            # Track section headings (only when the paragraph itself is a heading)
+            # Section headings start a fresh chunk (semantic boundary priority #1)
             heading = _detect_section(para)
-            if heading is not None and para.strip() == para.strip().rstrip() and len(para) <= 200:
-                # Looks like a standalone heading line -> designate the section.
-                # Headings longer than 200 chars are treated as body text.
+            if heading is not None and len(para) <= 200:
+                if current_chunk_text.strip() and current_has_body:
+                    # Flush so the heading binds to its own content
+                    chunks.append(make_chunk(current_chunk_text, current_chunk_start))
+                    current_chunk_text = ""
+                    current_chunk_size = 0
+                    current_has_body = False
                 current_section = heading
 
             sep = 0 if first_para else 2  # "\n\n" separator length
             first_para = False
 
             para_len = len(para)
+
+            # Track whether the current chunk contains body text (not just headings)
+            if heading is None:
+                current_has_body = True
 
             # Single paragraph larger than chunk_size -> sentence-level split
             if para_len > self.chunk_size:
