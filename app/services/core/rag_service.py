@@ -245,9 +245,22 @@ class RAGService:
                 return str(msg.get("content") or "")
         return str(choice)
 
+    def _resolve_model(self, model: Optional[str]) -> str:
+        """Resolve the chat model for a request.
+
+        Explicit ``model`` wins. Otherwise, pick the provider-appropriate
+        default (OpenRouter has its own default model) instead of always
+        falling back to ``CHAT_MODEL``.
+        """
+        if model:
+            return model
+        if settings.PROVIDER == "openrouter":
+            return settings.OPENROUTER_CHAT_MODEL
+        return settings.CHAT_MODEL
+
     def generate_response(self, messages: list, context: str = "", model: Optional[str] = None) -> Any:
         """Generate a response using the AI provider, returning the raw completion."""
-        model = model or settings.CHAT_MODEL
+        model = self._resolve_model(model)
         messages_dict = self._prepare_messages(messages, context)
         return self.provider.create_chat_completion(messages_dict, model)
 
@@ -258,7 +271,7 @@ class RAGService:
         iterator; this adapter normalizes both into an async generator of
         OpenAI-style SSE chunks (JSON strings).
         """
-        model = model or settings.CHAT_MODEL
+        model = self._resolve_model(model)
         messages_dict = self._prepare_messages(messages, context)
         stream = self.provider.create_chat_completion_stream(messages_dict, model)
 
