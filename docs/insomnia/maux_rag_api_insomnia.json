@@ -1,0 +1,162 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-07T16:05:00.000Z",
+  "__export_source": "openclaw-auto",
+  "resources": [
+    {
+      "_id": "__WORKSPACE__",
+      "_type": "workspace",
+      "name": "Maux RAG API",
+      "scope": "collection"
+    },
+    {
+      "_id": "__ENV__",
+      "_type": "environment",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "https://rag.masoudkargar.com",
+        "api_key": "YOUR_RAG_API_KEY"
+      }
+    },
+    {
+      "_id": "__ENV_PROD__",
+      "_type": "environment",
+      "parentId": "__ENV__",
+      "name": "Production",
+      "data": {
+        "base_url": "https://rag.masoudkargar.com",
+        "api_key": "rag_live_YOUR_KEY_HERE"
+      }
+    },
+    {
+      "_id": "__ENV_LOCAL__",
+      "_type": "environment",
+      "parentId": "__ENV__",
+      "name": "Local",
+      "data": {
+        "base_url": "http://127.0.0.1:8000",
+        "api_key": "rag_live_YOUR_KEY_HERE"
+      }
+    },
+    {
+      "_id": "__REQ_HEALTH__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Health Check",
+      "method": "GET",
+      "url": "{{ base_url }}/v1/health",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ]
+    },
+    {
+      "_id": "__REQ_ANALYSIS_STATUS__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Analysis Status",
+      "method": "GET",
+      "url": "{{ base_url }}/v1/analysis/status",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ]
+    },
+    {
+      "_id": "__REQ_INIT__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Initialize Collection",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/vector_db/initialize_collection",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ]
+    },
+    {
+      "_id": "__REQ_ADD__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Add Document (legacy, single embedding)",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/vector_db/add_document",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"text\": \"متن سند را اینجا بنویسید...\",\n  \"metadata\": {\n    \"source\": \"example.txt\",\n    \"category\": \"test\"\n  }\n}"
+      }
+    },
+    {
+      "_id": "__REQ_UPLOAD__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Upload Chunked Document (recommended)",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/vector_db/documents",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"text\": \"<متن کامل سند، می‌تواند خیلی بزرگ باشد>\",\n  \"source\": \"large_doc.txt\",\n  \"metadata\": {\n    \"document_id\": \"my_doc_1\",\n    \"topic\": \"قوانین\"\n  }\n}"
+      }
+    },
+    {
+      "_id": "__REQ_SEARCH__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Search Documents",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/vector_db/search_documents?limit=10",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"سوال شما درباره محتوای اسناد...\"\n}"
+      }
+    },
+    {
+      "_id": "__REQ_CHAT__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Chat Completion (RAG)",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/chat/completions",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"model\": \"deepseek/deepseek-v4-flash-0731\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"مقدار TEST-003 چیست؟\"\n    }\n  ],\n  \"stream\": false\n}"
+      }
+    },
+    {
+      "_id": "__REQ_ANALYSIS__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Analysis Query (RAG + LLM)",
+      "method": "POST",
+      "url": "{{ base_url }}/v1/analysis/query?query={{'سوال شما'|urlencode}}&use_rag=true",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ]
+    },
+    {
+      "_id": "__REQ_CLEAR__",
+      "_type": "request",
+      "parentId": "__WORKSPACE__",
+      "name": "Clear Collection (ALL documents!)",
+      "method": "DELETE",
+      "url": "{{ base_url }}/v1/vector_db/clear_collection",
+      "headers": [
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ]
+    }
+  ]
+}
