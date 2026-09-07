@@ -84,8 +84,31 @@
 - [ ] revoke `OPENROUTER_API_KEY` قدیمی + گذاشتن کلید جدید در `/var/rag_app/.env`
 - [ ] revoke `OPENAI_API_KEY` قدیمی (یا حذف از `.env`)
 
-## ۷. عقبمانده / TODO
+## ۷. تست با اسناد واقعی — Microsoft 10-K (SEC)
 
+دو فایل واقعی SEC دانلود و آپلود شدند (HTML → استخراج متن row-preserving):
+
+| سند | منبع SEC | چانکها | زمان آپلود |
+|---|---|---|---|
+| `msft_10k_fy2025` | 10-K 2025-06-30 | ۶۲۲ | ۴۴–۵۰ ثانیه |
+| `msft_10k_fy2026` | 10-K 2026-06-30 | ۶۳۵ | ۴۶–۵۱ ثانیه |
+
+### نتایج بازیابی ارقام مالی
+
+| سوال | رقم واقعی (از سند) | رتبهی ریتریوال |
+|---|---|---|
+| Total revenue FY2026 | 331,839 | ✅ ۰ |
+| Total revenue FY2025 | 281,724 | ✅ ۰ |
+| Operating income FY2026 | 155,237 | ✅ ۱ |
+| Net income FY2026 | 133,749 | ✅ ۰ |
+| Diluted EPS FY2026 | 17.95 | ✅ ۰ |
+| Diluted EPS FY2025 | 13.64 | ✅ ۰ |
+| Basic EPS FY2026 | 18.00 | ✅ ۰ |
+
+نکته: برای جداول مالی استخراج **row-preserving** (هر سطر جدول → یک خط `label: v1 v2 v3`)
+ضروری بود؛ بدون آن، اعداد از برچسبها جدا میشدند و بازیابی رقم شکست میخورد.
+
+## ۸. عقبمانده / TODO
 - [ ] تست `chat/completions` و `analysis/query` با کلید جدید OpenRouter (پس از ست شدن در `.env`)
 - [ ] (پیشنهاد) endpoint حذف انتخابی (`DELETE /documents/{document_id}`) — فعلاً `clear_collection` کل را پاک میکند
 - [ ] (پیشنهاد) بازنویسی تاریخچهی گیت با `filter-repo` برای پاککردن کلیدها از history (ترجیح: فقط rotation؛ بازنویسی history نیاز به force push دارد و همکاری شما)
