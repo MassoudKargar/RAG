@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # OpenRouter Settings
     OPENROUTER_API_KEY: Optional[str] = None
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_CHAT_MODEL: str = "nvidia/nemotron-3-super-120b-a12b:free"
+    OPENROUTER_CHAT_MODEL: str = "deepseek/deepseek-v4-flash-0731"
     OPENROUTER_EMBEDDING_MODEL: str = "openai/text-embedding-3-small"
     
     # Local Embedding Settings / امبدینگ محلی با HuggingFace
