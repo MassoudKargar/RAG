@@ -247,12 +247,29 @@ class RAGService:
         valuable = {t for t in query_tokens if t[0].isalpha() and any(ch.isdigit() for ch in t)} | \
                    {t for t in query_tokens if t.isdigit() and len(t) >= 2}
 
+        # IDF: how many of the candidate docs contain each query token. Rare
+        # tokens (identifiers, numbers, uncommon terms) get a big boost while
+        # stopword-ish tokens (net, income, fiscal, year) stay near zero.
+        doc_freq = {t: 0 for t in query_tokens}
+        for i in range(len(docs)):
+            dt = self._lexical_tokens(docs[i])
+            for t in query_tokens:
+                if t in dt:
+                    doc_freq[t] += 1
+        import math
+        n_docs = max(1, len(docs))
+        idf = {t: math.log((n_docs + 1) / (f + 1)) + 1.0 for t, f in doc_freq.items()}
+
         def score(i: int) -> float:
             doc_tokens = self._lexical_tokens(docs[i])
-            overlap = len(query_tokens & doc_tokens)
-            valuable_hit = len(valuable & doc_tokens)
-            # lexical bonus: valuable token hit = 2.0 distance boost, word hit = 0.5
-            return dists[i] - (valuable_hit * 2.0 + (overlap - valuable_hit) * 0.5)
+            hit_tokens = query_tokens & doc_tokens
+            if not hit_tokens:
+                return dists[i]
+            # distance boost proportional to IDF weight (capped at 3.0)
+            boost = min(3.0, sum(idf[t] for t in hit_tokens) * 0.75)
+            # identifiers get an extra fixed nudge
+            boost += 1.0 if (valuable & doc_tokens) else 0.0
+            return dists[i] - boost
 
         order = sorted(range(len(docs)), key=score)
         final_k = limit if limit is not None else settings.RAG_RETRIEVAL_K
