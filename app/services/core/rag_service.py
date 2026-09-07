@@ -151,8 +151,10 @@ class RAGService:
     # ------------------------------------------------------------------
     # Retrieval
     # ------------------------------------------------------------------
-    def _lexical_tokens(self, text: str) -> set:
+    def _lexical_tokens(self, text: Optional[str]) -> set:
         """Extract searchable tokens: identifiers (TEST-003), numbers, words."""
+        if not text:
+            return set()
         tokens = set()
         for m in re.finditer(r"[A-Za-z][A-Za-z0-9_-]*|[۰-۹0-9]+", text):
             tokens.add(m.group(0).lower())
