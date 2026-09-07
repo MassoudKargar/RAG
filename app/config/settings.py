@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     # Candidate pool scanned before lexical re-rank. Large documents (hundreds of
     # chunks) need a bigger pool so rare exact-value chunks (e.g. an identifier)
     # survive dense ranking and reach the lexical boost step.
-    RAG_RETRIEVAL_CANDIDATES: int = 300
+    RAG_RETRIEVAL_CANDIDATES: int = 800
 
     # Document Chunking Settings
     RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)
