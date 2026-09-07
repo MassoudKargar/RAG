@@ -195,9 +195,20 @@ class RAGService:
         if not years:
             # Year outside the corpus -> match nothing (honest no-answer path)
             return {"fiscal_year": -1}
+        # Multi-year tables: a chunk can contain values for several years while
+        # its canonical fiscal_year is only one of them. Match either the
+        # primary fiscal_year OR a year explicitly present in the chunk text.
         if len(years) == 1:
-            return {"fiscal_year": years[0]}
-        return {"fiscal_year": {"$in": years}}
+            y = years[0]
+            return {"$or": [
+                {"fiscal_year": y},
+                {"years_present": {"$contains": y}},
+            ]}
+        return {"$or": [
+            {"fiscal_year": {"$in": years}},
+            {"years_present": {"$contains": years[0]}},
+            {"years_present": {"$contains": years[-1]}},
+        ]}
 
     def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.

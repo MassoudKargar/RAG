@@ -70,6 +70,18 @@ _SECTION_PATTERNS = [
 ]
 
 
+_YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
+_PERSIAN_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+
+def _extract_years_from_text(text: str) -> List[int]:
+    """Return sorted unique fiscal years mentioned in a chunk's text."""
+    if not text:
+        return []
+    t = text.translate(_PERSIAN_DIGITS)
+    return sorted({int(m) for m in _YEAR_RE.findall(t)})
+
+
 def _detect_section(paragraph: str) -> Optional[str]:
     """Return a section label for a paragraph that looks like a heading.
 
@@ -333,6 +345,12 @@ class ChunkerService:
             # ensure the canonical keys are never overridden by user metadata
             chunk.metadata["document_id"] = document_id
             chunk.metadata["chunk_index"] = chunk.metadata.get("chunk_index", 0)
+            # fiscal years explicitly present in this chunk's text (used to
+            # match multi-year tables: a table row with FY2024/FY2025/FY2026
+            # values lives under one chunk but must answer any of those years)
+            years = _extract_years_from_text(chunk.text)
+            if years:
+                chunk.metadata["years_present"] = years
 
         logger.info(
             "Document %s chunked: %d chunks (size=%d, overlap=%d)",
