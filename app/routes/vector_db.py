@@ -67,7 +67,7 @@ async def search_documents(query: Query, limit: Optional[int] = None):
     try:
         # Use the configured embedding provider for embeddings
         embedding = rag_service.embedding_provider.create_embedding(query.prompt)
-        results = rag_service.search_similar_documents(embedding, limit=limit)
+        results = rag_service.search_similar_documents(embedding, limit=limit, query=query.prompt)
         search_results = []
         for i in range(len(results['ids'][0])):
             search_results.append(SearchResult(

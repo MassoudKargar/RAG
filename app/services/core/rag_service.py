@@ -1,6 +1,7 @@
 from typing import Dict, List, Any, AsyncGenerator, Optional
 import uuid
 import json
+import re
 import logging
 from app.config.settings import settings
 from app.services.core.vector_store import VectorStoreService
@@ -142,17 +143,60 @@ class RAGService:
     # ------------------------------------------------------------------
     # Retrieval
     # ------------------------------------------------------------------
-    def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None) -> Dict[str, Any]:
+    def _lexical_tokens(self, text: str) -> set:
+        """Extract searchable tokens: identifiers (TEST-003), numbers, words."""
+        tokens = set()
+        for m in re.finditer(r"[A-Za-z][A-Za-z0-9_-]*|[۰-۹0-9]+", text):
+            tokens.add(m.group(0).lower())
+        return tokens
+
+    def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.
 
         ``limit`` defaults to settings.RAG_RETRIEVAL_K (can be larger than the
         final context size). Results include distances (lower = more similar).
+
+        When ``query`` is provided, a lightweight lexical re-rank is applied on
+        top of the vector results: chunks containing rare query tokens
+        (identifiers such as ``TEST-003``, numbers) float to the top. This
+        fixes exact-value lookups in large corpora where dense retrieval ranks
+        many similar-looking chunks within noise.
         """
-        return self.vector_store.search(
+        result = self.vector_store.search(
             collection_name=self.collection_name,
             query_embeddings=embedding,
             n_results=limit if limit is not None else settings.RAG_RETRIEVAL_K,
         )
+        if not query:
+            return result
+
+        docs = (result.get("documents") or [[]])[0]
+        metas = (result.get("metadatas") or [[]])[0]
+        dists = (result.get("distances") or [[]])[0]
+        if not docs:
+            return result
+
+        query_tokens = self._lexical_tokens(query)
+        # identifiers/numbers are the high-value tokens for exact lookups
+        valuable = {t for t in query_tokens if t[0].isalpha() and any(ch.isdigit() for ch in t)} | \
+                   {t for t in query_tokens if t.isdigit() and len(t) >= 2}
+
+        def score(i: int) -> float:
+            doc_tokens = self._lexical_tokens(docs[i])
+            overlap = len(query_tokens & doc_tokens)
+            valuable_hit = len(valuable & doc_tokens)
+            # lexical bonus: valuable token hit = 2.0 distance boost, word hit = 0.5
+            return dists[i] - (valuable_hit * 2.0 + (overlap - valuable_hit) * 0.5)
+
+        order = sorted(range(len(docs)), key=score)
+        def take(key, default=None):
+            return [key[i] for i in order]
+        return {
+            "ids": take(result.get("ids")[0]) if result.get("ids") else [],
+            "documents": [docs[i] for i in order],
+            "metadatas": [metas[i] for i in order] if metas else [],
+            "distances": [dists[i] for i in order] if dists else [],
+        }
 
     def build_context(self, search_result: Dict[str, Any], limit: Optional[int] = None) -> str:
         """Build a clean, labeled context string from a ChromaDB search result.

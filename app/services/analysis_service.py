@@ -229,7 +229,7 @@ class SmartAnalysisService:
         try:
             # Search for similar documents
             embedding = self.rag_service.embedding_provider.create_embedding(query)
-            search_result = self.rag_service.search_similar_documents(embedding)
+            search_result = self.rag_service.search_similar_documents(embedding, query=query)
 
             # Extract relevant chunks (ChromaDB returns list-of-lists)
             documents = (search_result.get("documents") or [[]])[0] or []
