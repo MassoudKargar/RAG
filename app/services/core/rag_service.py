@@ -156,16 +156,21 @@ class RAGService:
         ``limit`` defaults to settings.RAG_RETRIEVAL_K (can be larger than the
         final context size). Results include distances (lower = more similar).
 
-        When ``query`` is provided, a lightweight lexical re-rank is applied on
-        top of the vector results: chunks containing rare query tokens
-        (identifiers such as ``TEST-003``, numbers) float to the top. This
-        fixes exact-value lookups in large corpora where dense retrieval ranks
-        many similar-looking chunks within noise.
+        Pipeline:
+        1. Vector search over a candidate pool of
+           ``settings.RAG_RETRIEVAL_CANDIDATES`` chunks (default 300).
+        2. When ``query`` is provided, lexical re-rank the candidate pool:
+           chunks containing rare query tokens (identifiers such as
+           ``TEST-003``, numbers) float to the top via a distance boost.
+        3. Return the top ``limit`` (RAG_RETRIEVAL_K) after re-rank.
         """
+        candidates = getattr(settings, "RAG_RETRIEVAL_CANDIDATES", 300)
+        if limit is not None:
+            candidates = max(candidates, limit)
         result = self.vector_store.search(
             collection_name=self.collection_name,
             query_embeddings=embedding,
-            n_results=limit if limit is not None else settings.RAG_RETRIEVAL_K,
+            n_results=candidates,
         )
         if not query:
             return result
@@ -189,13 +194,18 @@ class RAGService:
             return dists[i] - (valuable_hit * 2.0 + (overlap - valuable_hit) * 0.5)
 
         order = sorted(range(len(docs)), key=score)
-        def take(key, default=None):
-            return [key[i] for i in order]
+        final_k = limit if limit is not None else settings.RAG_RETRIEVAL_K
+        order = [i for i in order][:final_k]
+        ids_inner = result.get("ids")
+        if ids_inner and isinstance(ids_inner[0], list):
+            ids_sorted = [ids_inner[0][i] for i in order]
+        else:
+            ids_sorted = [ids_inner[i] for i in order] if ids_inner else []
         return {
-            "ids": take(result.get("ids")[0]) if result.get("ids") else [],
-            "documents": [docs[i] for i in order],
-            "metadatas": [metas[i] for i in order] if metas else [],
-            "distances": [dists[i] for i in order] if dists else [],
+            "ids": [ids_sorted],
+            "documents": [[docs[i] for i in order]],
+            "metadatas": [[metas[i] for i in order]] if metas else [],
+            "distances": [[dists[i] for i in order]] if dists else [],
         }
 
     def build_context(self, search_result: Dict[str, Any], limit: Optional[int] = None) -> str:

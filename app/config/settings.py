@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     RAG_RETRIEVAL_K: int = 10  # Number of results to retrieve from vector DB
     RAG_FINAL_K: int = 3       # Number of results to send to LLM
 
+    # Candidate pool scanned before lexical re-rank. Large documents (hundreds of
+    # chunks) need a bigger pool so rare exact-value chunks (e.g. an identifier)
+    # survive dense ranking and reach the lexical boost step.
+    RAG_RETRIEVAL_CANDIDATES: int = 300
+
     # Document Chunking Settings
     RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)
     RAG_CHUNK_OVERLAP: int = 100   # Characters of overlap between chunks
