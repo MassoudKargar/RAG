@@ -61,13 +61,19 @@ class Settings(BaseSettings):
         case_sensitive = True
 
     def validate_api_keys(self):
-        """Validate that the required API key is present based on the selected provider"""
+        """Validate that the required API key is present based on the selected provider.
+
+        Only raises when the provider would actually be *used* at import time.
+        OpenRouter chat is invoked lazily; an empty OPENROUTER_API_KEY must not
+        block the API from booting (embedding runs locally). Requests that
+        actually call chat will fail with a clear provider error instead.
+        """
         if self.PROVIDER == "avalai" and not self.AVALAI_API_KEY:
             raise ValueError("AVALAI_API_KEY is required when using AvalAI provider")
         elif self.PROVIDER == "openai" and not self.OPENAI_API_KEY:
             raise ValueError("OPENAI_API_KEY is required when using OpenAI provider")
-        elif self.PROVIDER == "openrouter" and not self.OPENROUTER_API_KEY:
-            raise ValueError("OPENROUTER_API_KEY is required when using OpenRouter provider")
+        # OpenRouter: do NOT hard-fail at import. Lazily-created provider raises
+        # its own clear error when chat/analysis is actually attempted.
 
     @property
     def effective_embedding_provider(self) -> str:
