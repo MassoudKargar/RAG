@@ -96,11 +96,19 @@ class RAGService:
             document_id = f"doc_{uuid.uuid4().hex}"
         batch_size = batch_size or getattr(settings, "RAG_EMBEDDING_BATCH_SIZE", DEFAULT_EMBEDDING_BATCH_SIZE)
         batch_size = max(1, int(batch_size))
+
+        # Canonical metadata propagated to every chunk (standardized fields for
+        # SEC/10-K style corpora: company / fiscal_year / document_type).
+        normalized_meta = dict(metadata or {})
+        if "document_id" not in normalized_meta:
+            normalized_meta["document_id"] = document_id
+        if "chunk_id" in normalized_meta:
+            normalized_meta.pop("chunk_id")  # chunker owns chunk_id
         if source is None and metadata:
             source = metadata.get("source") if isinstance(metadata, dict) else None
 
         chunks = self.chunker.chunk_document(
-            text, document_id=document_id, source=source, metadata=metadata
+            text, document_id=document_id, source=source, metadata=normalized_meta
         )
         if not chunks:
             raise ValueError("Document is empty or produced no chunks")

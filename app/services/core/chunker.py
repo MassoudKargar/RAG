@@ -244,6 +244,7 @@ class ChunkerService:
                 metadata=meta_dict,
                 id=f"{document_id}::chunk_{chunk_index:05d}",
             )
+            chunk.metadata["chunk_id"] = chunk.id
             chunk_index += 1
             return chunk
 
