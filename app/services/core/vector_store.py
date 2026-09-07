@@ -85,19 +85,51 @@ class VectorStoreService:
             metadatas=metadatas
         )
 
+    def upsert_documents(
+        self,
+        collection_name: str,
+        documents: List[str],
+        ids: List[str],
+        metadatas: Optional[List[Dict[str, Any]]] = None,
+    ):
+        """Insert or replace documents by id.
+
+        Because chunk ids are deterministic (``<document_id>::chunk_<index>``),
+        upserting guarantees that re-adding the same document replaces its old
+        chunks instead of creating duplicates.
+        """
+        collection = self.get_or_create_collection(collection_name)
+        return collection.upsert(
+            documents=documents,
+            ids=ids,
+            metadatas=metadatas,
+        )
+
     def search(
-        self, 
-        collection_name: str, 
-        query_embeddings: List[float]
+        self,
+        collection_name: str,
+        query_embeddings: List[float],
+        n_results: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Search for similar documents in a collection"""
+        """Search for similar documents in a collection.
+
+        ``n_results`` defaults to settings.RAG_RETRIEVAL_K (the retrieval
+        budget, decoupled from the final context size). Distances are included:
+        lower distance = more similar (cosine in this deployment).
+        """
         collection = self.get_or_create_collection(collection_name)
         return collection.query(
             query_embeddings=query_embeddings,
-            n_results=settings.RAG_SEARCH_LIMIT
+            n_results=n_results if n_results is not None else settings.RAG_RETRIEVAL_K,
+            include=["documents", "metadatas", "distances"],
         )
 
     def clear_collection(self, collection_name: str):
         """Delete a collection"""
         collection = self.get_or_create_collection(collection_name)
-        return collection.delete() 
+        return collection.delete()
+
+    def delete_documents(self, collection_name: str, where: Dict[str, Any]):
+        """Delete only the documents matching a metadata filter (safe, targeted)."""
+        collection = self.get_or_create_collection(collection_name)
+        return collection.delete(where=where) 

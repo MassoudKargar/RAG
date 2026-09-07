@@ -17,12 +17,9 @@ async def create_chat_completion(request: ChatCompletionRequest):
         # Create embedding for the last user message using the embedding provider
         embedding = rag_service.embedding_provider.create_embedding(last_message.content)
         search_results = rag_service.search_similar_documents(embedding)
-        
-        # Build context from search results
-        context = "Relevant documents:\n"
-        for doc, metadata in zip(search_results['documents'][0], search_results['metadatas'][0]):
-            context += f"- Content: {doc}\n"
-            context += f"  Metadata: {metadata}\n"
+
+        # Build clean, labeled context from the retrieved chunks
+        context = rag_service.build_context(search_results)
 
         if request.stream:
             async def stream_response():

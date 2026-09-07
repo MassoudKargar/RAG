@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # Document Chunking Settings
     RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)
     RAG_CHUNK_OVERLAP: int = 100   # Characters of overlap between chunks
+
+    # Embedding batching (chunks are embedded+stored in batches of this size)
+    RAG_EMBEDDING_BATCH_SIZE: int = 32
     
     # System Settings
     SYSTEM_PROMPT: str = (

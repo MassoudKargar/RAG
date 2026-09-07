@@ -13,6 +13,7 @@ os.environ.setdefault("RAG_CHUNK_OVERLAP", "100")
 os.environ.setdefault("RAG_RETRIEVAL_K", "10")
 os.environ.setdefault("RAG_FINAL_K", "3")
 os.environ.setdefault("RAG_SEARCH_LIMIT", "3")
+os.environ.setdefault("RAG_EMBEDDING_BATCH_SIZE", "8")
 
 # Add app to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

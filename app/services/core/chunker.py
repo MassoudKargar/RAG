@@ -2,12 +2,23 @@
 
 This service handles intelligent document chunking with semantic boundary detection.
 It supports Persian/Arabic text and preserves document structure where possible.
+
+Chunking strategy (priority order):
+1. Sections / headings
+2. Paragraphs
+3. Sentences
+4. Character limit as final boundary
+
+The chunker is deterministic:
+- a given document + document_id always produces the same chunks and the same
+  chunk ids (``<document_id>::chunk_<index>``), which makes re-inserting a
+  document safe (replace semantics in the vector store).
 """
 
 import re
 import uuid
 import logging
-from typing import List, Dict, Any, Optional, Generator
+from typing import List, Dict, Any, Optional, Generator, Tuple
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
@@ -18,7 +29,8 @@ class Chunk:
     """Represents a single chunk of a document."""
     text: str
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+    id: Optional[str] = None
+
 
 @dataclass
 class ChunkMetadata:
@@ -31,7 +43,7 @@ class ChunkMetadata:
     page: Optional[int] = None
     chunk_start_char: int = 0
     chunk_end_char: int = 0
-    
+
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "document_id": self.document_id,
@@ -49,102 +61,126 @@ class ChunkMetadata:
         return result
 
 
+# Heading / section patterns shared by the paragraph splitter and the section
+# detector. Order matters: markdown first, then Persian numbered, then English.
+_SECTION_PATTERNS = [
+    re.compile(r"^(#{1,6})\s+(.+)$"),                                # markdown
+    re.compile(r"^(?:بخش|سرفصل|فصل|قسمت)\s*[۰-۹0-9]*\s*[:：.\-]?\s*(.+)?$"),  # Persian
+    re.compile(r"^(?:Section|Chapter|Part)\s+\d+[:\-.]?\s*(.*)$", re.IGNORECASE),  # English
+]
+
+
+def _detect_section(paragraph: str) -> Optional[str]:
+    """Return a section label for a paragraph that looks like a heading.
+
+    Returns None when the paragraph is body text.
+    """
+    stripped = paragraph.strip()
+    if not stripped:
+        return None
+    for pattern in _SECTION_PATTERNS:
+        m = pattern.match(stripped)
+        if m:
+            label = (m.group(2) or m.group(1) or stripped).strip().rstrip(":#.-—–")
+            return label or stripped
+    return None
+
+
 class ChunkerService:
     """Service for intelligent document chunking with semantic boundaries."""
-    
+
     def __init__(
         self,
         chunk_size: int = 800,
         chunk_overlap: int = 100,
     ):
+        if chunk_size <= 0:
+            raise ValueError("chunk_size must be a positive integer")
+        if chunk_overlap < 0:
+            raise ValueError("chunk_overlap must be >= 0")
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
-    
-    def _extract_section_headers(self, text: str) -> List[tuple]:
-        """Extract section headers and their positions from text.
-        
-        Supports:
-        - Persian/Arabic numbered sections: "بخش ۱", "سرفصل ۲"
-        - English numbered sections: "Section 1", "Chapter 2"
-        - Markdown headings: "# Heading", "## Heading"
-        - Underlined headings: "======="
+
+    def _split_into_paragraphs(self, text: str) -> List[Tuple[int, int, str]]:
+        """Split text into (start, end, text) paragraphs including positions.
+
+        Positions are relative to the normalized text. Handles:
+        - CRLF / CR newlines
+        - double-newline paragraph separators
+        - bullet list items (kept inside their paragraph; we do not hard-split
+          bullets because that destroys list context — sentence/char fallback
+          still bounds the size)
         """
-        sections = []
-        
-        # Persian/Arabic numbered sections
-        # Match patterns like: "بخش ۱"، "سرفصل دوم"، "فصل ۳"
-        persian_numbered = re.compile(
-            r'(?:بخش|سرفصل|فصل|بخش\s+[۰-۹۰-۹]+|سرفصل\s+[۰-۹۰-۹]+)',
-            re.IGNORECASE
-        )
-        
-        # English numbered sections
-        english_numbered = re.compile(
-            r'(?:Section|Chapter|Part)\s*[\d\s]+',
-            re.IGNORECASE
-        )
-        
-        # Markdown headings
-        markdown_heading = re.compile(r'^(#{1,6})\s+(.+)$', re.MULTILINE)
-        
-        for match in persian_numbered.finditer(text):
-            sections.append((match.start(), match.group()))
-        
-        for match in english_numbered.finditer(text):
-            sections.append((match.start(), match.group()))
-            
-        for match in markdown_heading.finditer(text):
-            sections.append((match.start(), match.group(2)))
-        
-        # Sort by position
-        sections.sort(key=lambda x: x[0])
-        return sections
-    
-    def _split_into_paragraphs(self, text: str) -> List[str]:
-        """Split text into paragraphs (max one chunk at a time).
-        
-        Handles various paragraph delimiters including:
-        - Double newlines
-        - Persian newline conventions
-        - Bullet points
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        paragraphs: List[Tuple[int, int, str]] = []
+        cursor = 0
+        for match in re.finditer(r"[^\n](?:[^\n]*\n?)*", text):
+            start, end = match.start(), match.end()
+            para = text[start:end].strip()
+            if para and para != "\n":
+                paragraphs.append((start, start + len(para), para))
+            cursor = end
+        if not paragraphs and text.strip():
+            paragraphs.append((0, len(text.strip()), text.strip()))
+        return paragraphs
+
+    def _split_sentences(self, paragraph: str) -> List[str]:
+        """Split a paragraph into sentences (Persian/Arabic + English aware).
+
+        Boundaries: ``.`` ``!`` ``?`` ``؟`` followed by whitespace. If no
+        sentence boundary is found the paragraph is returned as a single item.
         """
-        # Normalize newlines
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
-        
-        # Split by double newlines or more
-        paragraphs = re.split(r'\n\s*\n', text)
-        
-        # Also split by bullet patterns
-        bullet_pattern = re.compile(
-            r'(?:[•\-•▸▹›»❯▶►➜➔➕➖➘➚⚡── ──● ○ ◉ ◆ ■ □ ▣ ♦ ◊ ♪ ★ ☆ ⚡ 🔥 🎯 🎯 🎯]' 
-            r'|[۰-۹۰-۹]+\.|[0-9]+\.)'
-        )
-        
-        result = []
-        for para in paragraphs:
-            if bullet_pattern.match(para):
-                # Split bullet lists into separate items
-                parts = re.split(bullet_pattern, para)
-                for part in parts:
-                    part = part.strip()
-                    if part:
-                        result.append(part)
-            else:
-                if para.strip():
-                    result.append(para.strip())
-        
+        parts = re.split(r"(?<=[.!?؟])\s+", paragraph)
+        return [p for p in parts if p]
+
+    def _split_long_paragraph(
+        self,
+        paragraph: str,
+        chunk_size: int,
+    ) -> List[Tuple[int, int, str]]:
+        """Split one over-long paragraph into (start, end, text) sentence chunks.
+
+        Sentences are grouped up to chunk_size; a sentence longer than
+        chunk_size is hard-split at the character limit.
+        """
+        sentences = self._split_sentences(paragraph)
+        result: List[Tuple[int, int, str]] = []
+        current_text = ""
+        current_start = 0
+
+        def flush() -> None:
+            nonlocal current_text, current_start
+            if current_text:
+                start = paragraph.find(current_text, current_start - len(current_text))
+                if start < 0:
+                    start = current_start
+                result.append((start, start + len(current_text), current_text))
+                current_text = ""
+                current_start = start + 1
+
+        for sentence in sentences:
+            if len(sentence) > chunk_size:
+                # Hard-split a single enormous sentence at the character limit
+                flush()
+                start = 0
+                while start < len(sentence):
+                    end = min(start + chunk_size, len(sentence))
+                    result.append(
+                        (0, 0, sentence[start:end])
+                    )
+                    start = end
+                continue
+            if current_text and len(current_text) + len(sentence) + 1 > chunk_size:
+                flush()
+            current_text = f"{current_text} {sentence}".strip() if current_text else sentence
+
+        flush()
+
+        if not result:
+            # paragraph shorter than chunk_size but the caller still routed it here
+            result = [(0, len(paragraph), paragraph)]
         return result
-    
-    def _count_chars(self, text: str) -> int:
-        """Count characters, handling Persian/Arabic properly."""
-        return len(text)
-    
-    def _calculate_word_count(self, text: str) -> int:
-        """Estimate word count for chunk sizing."""
-        # Split on whitespace
-        words = text.split()
-        return len(words)
-    
+
     def chunk_document(
         self,
         text: str,
@@ -154,245 +190,158 @@ class ChunkerService:
     ) -> List[Chunk]:
         """
         Split a document into chunks with semantic boundaries.
-        
+
         Strategy:
-        1. First, try to split by section/paragaph boundaries
-        2. Then, if a chunk exceeds size limit, split at sentence level
-        3. Finally, use character limit as absolute boundary
-        
+        1. Split into paragraphs at blank lines.
+        2. Track the current section heading (markdown / English / Persian).
+        3. Accumulate paragraphs per chunk; flush at chunk_size with overlap.
+        4. A single paragraph larger than chunk_size is split at sentence
+           boundaries, then at the character limit as a final fallback.
+
         Args:
             text: The full document text
             document_id: Unique identifier for the document
             source: Source file/path of the document
             metadata: Additional metadata to include in each chunk
-            
+
         Returns:
-            List of Chunk objects with text and metadata
+            List of Chunk objects with text, metadata and deterministic ids.
         """
         if document_id is None:
             document_id = str(uuid.uuid4())
-        
+
         if not text or not text.strip():
-            logger.warning(f"Empty or whitespace-only document provided for chunk_id {document_id}")
+            logger.warning(f"Empty or whitespace-only document provided (document_id={document_id})")
             return []
-        
-        # Initialize with original text to preserve Unicode
+
+        original = text
         text = self._normalize_text(text)
-        
-        # Get section boundaries
-        sections = self._extract_section_headers(text)
-        
-        # Split into paragraphs first
         paragraphs = self._split_into_paragraphs(text)
-        
-        chunks = []
+
+        chunks: List[Chunk] = []
         current_chunk_text = ""
-        current_chunk_start = 0
+        current_chunk_start = 0  # position in the normalized paragraph stream
+        current_chunk_size = 0
+        current_section: Optional[str] = None
         chunk_index = 0
-        total_chars_in_chunk = 0
-        
-        for para in paragraphs:
-            para_len = self._count_chars(para)
-            
-            # If a single paragraph is larger than chunk_size, we need to split it
-            # at sentence boundaries
-            if para_len > self.chunk_size:
-                # Flush current chunk if any
-                if total_chars_in_chunk > 0:
-                    chunk_meta = ChunkMetadata(
-                        document_id=document_id,
-                        chunk_index=chunk_index,
-                        total_chunks=0,
-                        source=source,
-                        chunk_start_char=current_chunk_start,
-                        chunk_end_char=current_chunk_start + total_chars_in_chunk
-                    )
-                    if metadata:
-                        chunk_meta_dict = chunk_meta.to_dict()
-                        chunk_meta_dict.update(metadata)
-                        chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta_dict))
-                    else:
-                        chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta.to_dict()))
-                    chunk_index += 1
-                    current_chunk_text = ""
-                    total_chars_in_chunk = 0
-                
-                # Split the long paragraph into sentence-sized chunks
-                sentence_chunks = self._split_long_paragraph(para, document_id, source, metadata, chunk_index)
-                for i, schunk in enumerate(sentence_chunks):
-                    # Apply overlap between sentence chunks
-                    if i > 0 and current_chunk_text:
-                        overlap_text = current_chunk_text[-self.chunk_overlap:] if self.chunk_overlap > 0 else ""
-                        schunk_text = overlap_text + schunk.text
-                    else:
-                        schunk_text = schunk.text
-                    
-                    chunk_meta = ChunkMetadata(
-                        document_id=document_id,
-                        chunk_index=chunk_index,
-                        total_chunks=0,
-                        source=source,
-                        chunk_start_char=current_chunk_start,
-                        chunk_end_char=current_chunk_start + len(schunk_text)
-                    )
-                    if metadata:
-                        chunk_meta_dict = chunk_meta.to_dict()
-                        chunk_meta_dict.update(metadata)
-                        chunks.append(Chunk(text=schunk_text, metadata=chunk_meta_dict))
-                    else:
-                        chunks.append(Chunk(text=schunk_text, metadata=chunk_meta.to_dict()))
-                    
-                    chunk_index += 1
-                    current_chunk_start += len(schunk_text)
-                    current_chunk_text = schunk_text
-                    total_chars_in_chunk = len(schunk_text)
-                # Reset current chunk after splitting long paragraph
-                current_chunk_text = ""
-                total_chars_in_chunk = 0
-                continue
-            
-            # If adding this paragraph would exceed chunk size
-            if total_chars_in_chunk + para_len > self.chunk_size and total_chars_in_chunk > 0:
-                # Save current chunk
-                chunk_meta = ChunkMetadata(
-                    document_id=document_id,
-                    chunk_index=chunk_index,
-                    total_chunks=0,  # Will be updated later
-                    source=source,
-                    chunk_start_char=current_chunk_start,
-                    chunk_end_char=current_chunk_start + total_chars_in_chunk
-                )
-                
-                # Merge user metadata
-                if metadata:
-                    chunk_meta_dict = chunk_meta.to_dict()
-                    chunk_meta_dict.update(metadata)
-                    chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta_dict))
-                else:
-                    chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta.to_dict()))
-                
-                chunk_index += 1
-                
-                # Start new chunk with overlap
-                overlap_text = current_chunk_text[-self.chunk_overlap:] if self.chunk_overlap > 0 else ""
-                current_chunk_text = overlap_text + para
-                current_chunk_start = current_chunk_start + total_chars_in_chunk - len(overlap_text)
-                total_chars_in_chunk = self._count_chars(current_chunk_text)
-            else:
-                # Add paragraph to current chunk
-                if current_chunk_text:
-                    current_chunk_text += "\n\n" + para
-                    total_chars_in_chunk += 2
-                else:
-                    current_chunk_text = para
-                total_chars_in_chunk += para_len
-        
-        # Don't forget the last chunk
-        if current_chunk_text.strip():
-            chunk_meta = ChunkMetadata(
+
+        def make_chunk(chunk_text: str, start_pos: int) -> Chunk:
+            nonlocal chunk_index
+            meta = ChunkMetadata(
                 document_id=document_id,
                 chunk_index=chunk_index,
-                total_chunks=0,
+                total_chunks=0,  # patched at the end
                 source=source,
-                chunk_start_char=current_chunk_start,
-                chunk_end_char=current_chunk_start + total_chars_in_chunk
+                section=current_section,
+                chunk_start_char=start_pos,
+                chunk_end_char=start_pos + len(chunk_text),
             )
-            
+            meta_dict = meta.to_dict()
             if metadata:
-                chunk_meta_dict = chunk_meta.to_dict()
-                chunk_meta_dict.update(metadata)
-                chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta_dict))
-            else:
-                chunks.append(Chunk(text=current_chunk_text, metadata=chunk_meta.to_dict()))
-        
-        # Update total_chunks in all chunks
-        for chunk in chunks:
-            chunk.metadata["total_chunks"] = len(chunks)
-        
-        logger.info(f"Document {document_id} chunked into {len(chunks)} parts")
-        return chunks
-    
-    def _split_long_paragraph(
-        self,
-        paragraph: str,
-        document_id: str,
-        source: Optional[str],
-        metadata: Optional[Dict[str, Any]],
-        start_index: int,
-    ) -> List[Chunk]:
-        """Split a very long paragraph into sentence-sized chunks.
-        
-        Priority:
-        1. Sentence boundaries (Persian and English)
-        2. Character limit as final boundary
-        """
-        # Try to split by sentences (Persian and English sentence boundaries)
-        sentences = re.split(r'(?<=[.!?؟])\s+', paragraph)
-        
-        result = []
-        current_text = ""
-        
-        for sentence in sentences:
-            sent_len = len(sentence)
-            
-            if len(current_text) + sent_len > self.chunk_size and len(current_text) > 0:
-                # Flush current chunk
-                result.append(Chunk(text=current_text, metadata={}))
-                # Start new chunk with overlap
-                overlap = current_text[-self.chunk_overlap:] if self.chunk_overlap > 0 else ""
-                current_text = overlap + sentence
-            else:
-                if current_text:
-                    current_text += " " + sentence
+                meta_dict.update(metadata)  # user metadata wins on conflicts
+            chunk = Chunk(
+                text=chunk_text,
+                metadata=meta_dict,
+                id=f"{document_id}::chunk_{chunk_index:05d}",
+            )
+            chunk_index += 1
+            return chunk
+
+        stream_pos = 0  # cursor over "\n\n".join(paragraph texts)
+        first_para = True
+
+        for start, end, para in paragraphs:
+            # Track section headings (only when the paragraph itself is a heading)
+            heading = _detect_section(para)
+            if heading is not None and para.strip() == para.strip().rstrip() and len(para) <= 200:
+                # Looks like a standalone heading line -> designate the section.
+                # Headings longer than 200 chars are treated as body text.
+                current_section = heading
+
+            sep = 0 if first_para else 2  # "\n\n" separator length
+            first_para = False
+
+            para_len = len(para)
+
+            # Single paragraph larger than chunk_size -> sentence-level split
+            if para_len > self.chunk_size:
+                # Flush pending chunk first
+                if current_chunk_text.strip():
+                    chunks.append(make_chunk(current_chunk_text, current_chunk_start))
+                    current_chunk_text = ""
+                    current_chunk_size = 0
+
+                for s_start, s_end, sentence_text in self._split_long_paragraph(para, self.chunk_size):
+                    if not sentence_text:
+                        continue
+                    # Apply overlap between consecutive sentence chunks
+                    if current_chunk_text and self.chunk_overlap > 0:
+                        overlap = current_chunk_text[-self.chunk_overlap:]
+                        chunk_text = overlap + sentence_text
+                    else:
+                        chunk_text = sentence_text
+                    chunks.append(make_chunk(chunk_text, max(0, current_chunk_start + (s_start or 0) - (len(overlap) if current_chunk_text and self.chunk_overlap > 0 else 0))))
+                    current_chunk_text = sentence_text
+                    current_chunk_size = len(sentence_text)
+                    current_chunk_start = chunks[-1].metadata["chunk_end"]
+                # After the long paragraph, start fresh
+                current_chunk_text = ""
+                current_chunk_size = 0
+                stream_pos += sep + para_len
+                continue
+
+            if current_chunk_size > 0 and current_chunk_size + sep + para_len > self.chunk_size:
+                # Flush and start a new chunk with overlap from the tail
+                chunks.append(make_chunk(current_chunk_text, current_chunk_start))
+                overlap = current_chunk_text[-self.chunk_overlap:] if self.chunk_overlap > 0 else ""
+                new_start = current_chunk_start + current_chunk_size
+                if overlap:
+                    current_chunk_text = overlap + para
+                    current_chunk_start = new_start - len(overlap)
+                    current_chunk_size = len(overlap) + para_len
                 else:
-                    current_text = sentence
-        
-        if current_text.strip():
-            result.append(Chunk(text=current_text, metadata={}))
-        
-        # If sentence splitting didn't produce enough chunks, fall back to character splitting
-        if len(result) <= 1 and len(paragraph) > self.chunk_size:
-            result = []
-            # Split by character limit
-            start = 0
-            while start < len(paragraph):
-                end = min(start + self.chunk_size, len(paragraph))
-                # Try to break at a sentence boundary
-                if end < len(paragraph):
-                    # Look for sentence end within the last 100 chars
-                    search_region = paragraph[max(start, end - 100):end]
-                    last_sentence_end = search_region.rfind('.')
-                    if last_sentence_end == -1:
-                        last_sentence_end = search_region.rfind('؟')
-                    if last_sentence_end > 0:
-                        end = max(start, end - 100) + last_sentence_end + 1
-                chunk_text = paragraph[start:end]
-                result.append(Chunk(text=chunk_text, metadata={}))
-                start = end
-                # Apply overlap
-                if start < len(paragraph) and self.chunk_overlap > 0:
-                    start -= self.chunk_overlap  # Backtrack for overlap
-                    if start < 0:
-                        start = 0
-        
-        return result if result else [Chunk(text=paragraph, metadata={})]
-    
+                    current_chunk_text = para
+                    current_chunk_start = new_start
+                    current_chunk_size = para_len
+            else:
+                added = (sep if current_chunk_size > 0 else 0) + para_len
+                if current_chunk_size == 0:
+                    current_chunk_text = para
+                else:
+                    current_chunk_text += "\n\n" + para
+                current_chunk_size += added
+
+            stream_pos += sep + para_len
+
+        if current_chunk_text.strip():
+            chunks.append(make_chunk(current_chunk_text, current_chunk_start))
+
+        # Patch total_chunks on every chunk (and keep user metadata last so
+        # document_id/chunk_index/total_chunks always reflect the truth)
+        total = len(chunks)
+        for chunk in chunks:
+            chunk.metadata["total_chunks"] = total
+            # ensure the canonical keys are never overridden by user metadata
+            chunk.metadata["document_id"] = document_id
+            chunk.metadata["chunk_index"] = chunk.metadata.get("chunk_index", 0)
+
+        logger.info(
+            "Document %s chunked: %d chunks (size=%d, overlap=%d)",
+            document_id, total, self.chunk_size, self.chunk_overlap,
+        )
+        return chunks
+
     def _normalize_text(self, text: str) -> str:
-        """Normalize text for processing while preserving original content.
-        
-        - Keep original Persian/Arabic characters intact
-        - Normalize various whitespace characters
-        - Preserve punctuation
+        """Normalize line endings/whitespace for processing.
+
+        The original text is preserved in memory; this normalized copy is only
+        used for chunk boundary decisions. Returned chunks contain the
+        original (normalized line-ending) text.
         """
-        # Replace various newlines with standard newline
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
-        
-        # Normalize multiple spaces
-        text = re.sub(r'[ \t]+', ' ', text)
-        
-        # Keep the text intact - no case folding for Persian
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
+        text = re.sub(r"[ \t]+", " ", text)
         return text.strip()
-    
+
     def chunk_document_generator(
         self,
         text: str,
@@ -403,19 +352,19 @@ class ChunkerService:
     ) -> Generator[List[Chunk], None, None]:
         """
         Generator that yields chunks in batches for memory efficiency.
-        
+
         Args:
             text: The full document text
             document_id: Unique identifier for the document
             source: Source file/path of the document
             metadata: Additional metadata to include in each chunk
             batch_size: Number of chunks per batch
-            
+
         Yields:
             Lists of Chunk objects (batches)
         """
         all_chunks = self.chunk_document(text, document_id, source, metadata)
-        
+
         for i in range(0, len(all_chunks), batch_size):
             yield all_chunks[i:i + batch_size]
 
@@ -423,17 +372,18 @@ class ChunkerService:
 # Global instance
 _chunker_service = None
 
+
 def get_chunker_service(
     chunk_size: Optional[int] = None,
     chunk_overlap: Optional[int] = None
 ) -> ChunkerService:
     """Get or create the chunker service instance."""
     global _chunker_service
-    
+
     if _chunker_service is None:
         from app.config.settings import settings
-        chunk_size = chunk_size or settings.RAG_CHUNK_SIZE
-        chunk_overlap = chunk_overlap or settings.RAG_CHUNK_OVERLAP
+        chunk_size = chunk_size if chunk_size is not None else settings.RAG_CHUNK_SIZE
+        chunk_overlap = chunk_overlap if chunk_overlap is not None else settings.RAG_CHUNK_OVERLAP
         _chunker_service = ChunkerService(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    
+
     return _chunker_service

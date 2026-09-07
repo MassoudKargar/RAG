@@ -47,7 +47,7 @@ class RAGResponse(BaseModel):
     model: str = Field(..., description="Model used")
     choices: List[Dict[str, Any]] = Field(..., description="Response choices")
     usage: Optional[Dict[str, int]] = Field(None, description="Token usage")
-    
+
     # RAG-specific metadata
     retrieved_context_used: bool = Field(False, description="Whether RAG context was used")
     retrieval_count: Optional[int] = Field(None, description="Number of documents retrieved")
