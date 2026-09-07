@@ -148,6 +148,9 @@ class SmartAnalysisService:
                     relevance = self._assess_relevance(query, rag_chunks)
                     confidence = (confidence + relevance) / 2
 
+                    # Successful RAG use recovers from any previous unavailability
+                    self.reset_unavailability_counter()
+
                     return AnalysisResult(
                         response=response,
                         used_rag_context=used_rag,
