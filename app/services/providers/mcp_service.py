@@ -16,6 +16,8 @@ from typing import Dict, List, Any, Optional, AsyncGenerator
 import logging
 import json
 
+from app.services.base import BaseAIProvider
+
 logger = logging.getLogger(__name__)
 
 
@@ -111,7 +113,8 @@ class MCPProvider(BaseAIProvider):
             loop = asyncio.get_event_loop()
             if loop.is_running():
                 async def gen():
-                    yield from self._fallback_chat_completion_stream(messages, model)
+                    async for chunk in self._fallback_chat_completion_stream(messages, model):
+                        yield chunk
                 return gen()
             # Run the async method synchronously
             result = loop.run_until_complete(self._create_chat_completion_stream_mcp(messages, model))
@@ -126,7 +129,7 @@ class MCPProvider(BaseAIProvider):
         # Would call MCP streaming service
         raise NotImplementedError("MCP streaming not yet implemented, use fallback")
     
-    def _fallback_chat_completion_stream(self, messages: list, model: str) -> AsyncGenerator[Any, None]:
+    async def _fallback_chat_completion_stream(self, messages: list, model: str) -> AsyncGenerator[Any, None]:
         """Fallback streaming using the RAG service."""
         from app.services.core.rag_service import rag_service
         async for chunk in rag_service.generate_stream_response(messages, "", model=model):

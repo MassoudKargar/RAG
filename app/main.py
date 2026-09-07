@@ -6,6 +6,8 @@ import logging
 from app.config.settings import settings
 from app.services.core.rag_service import rag_service
 
+logger = logging.getLogger(__name__)
+
 
 def require_api_key(x_api_key: str = Header(default="")) -> None:
     """Fail-closed API key check: every request must carry a valid X-API-Key header."""
