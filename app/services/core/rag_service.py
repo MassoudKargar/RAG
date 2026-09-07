@@ -195,20 +195,26 @@ class RAGService:
         if not years:
             # Year outside the corpus -> match nothing (honest no-answer path)
             return {"fiscal_year": -1}
-        # Multi-year tables: a chunk can contain values for several years while
-        # its canonical fiscal_year is only one of them. Match either the
-        # primary fiscal_year OR a year explicitly present in the chunk text.
+        # Each filing doc has ONE primary fiscal_year in metadata. Multi-year
+        # comparison rows live under the doc of their FIRST/most recent year, so
+        # filtering strictly on fiscal_year keeps the pool small and precise.
         if len(years) == 1:
-            y = years[0]
-            return {"$or": [
-                {"fiscal_year": y},
-                {"years_present": {"$contains": y}},
-            ]}
-        return {"$or": [
-            {"fiscal_year": {"$in": years}},
-            {"years_present": {"$contains": years[0]}},
-            {"years_present": {"$contains": years[-1]}},
-        ]}
+            return {"fiscal_year": years[0]}
+        # Multi-year query: match any of the requested docs (each contributes its
+        # own primary fiscal_year row + multi-year comparison tables).
+        return {"fiscal_year": {"$in": years}}
+
+    def _query_bigrams(self, text: str) -> List[str]:
+        """Return consecutive two-word phrases from a query in occurrence order.
+
+        e.g. "Microsoft net income fiscal 2022" -> ["microsoft net",
+        "net income", "income fiscal", "fiscal 2022"]. Word order matters:
+        "net income"/"gross margin" are stronger signals than a reversed pair.
+        """
+        if not text:
+            return []
+        words = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", text.lower())
+        return [f"{a} {b}" for a, b in zip(words, words[1:])]
 
     def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.
@@ -260,20 +266,54 @@ class RAGService:
         n_docs = max(1, len(docs))
         idf = {t: math.log((n_docs + 1) / (f + 1)) + 1.0 for t, f in doc_freq.items()}
 
-        def score(i: int) -> float:
-            doc_tokens = self._lexical_tokens(docs[i])
-            hit_tokens = query_tokens & doc_tokens
-            if not hit_tokens:
-                return dists[i]
-            # distance boost proportional to IDF weight (capped at 3.0)
-            boost = min(3.0, sum(idf[t] for t in hit_tokens) * 0.75)
-            # identifiers get an extra fixed nudge
-            boost += 1.0 if (valuable & doc_tokens) else 0.0
-            return dists[i] - boost
+        query_bigrams = self._query_bigrams(query)
+        query_years = self._extract_years(query)
 
-        order = sorted(range(len(docs)), key=score)
+        # Stopword-ish financial tokens that appear in almost every chunk and so
+        # carry no signal (their IDF is low); we exclude them from the sparse
+        # weight so the ranking is driven by discriminative terms only.
+        _NOISE = {"net", "income", "fiscal", "year", "microsoft", "revenue",
+                  "operating", "earnings", "per", "share", "basic", "diluted",
+                  "expense", "total"}
+
+        # sparse ranking driven by rare terms (year target + identifiers) +
+        # phrase matches; RRF fuses it with dense dist robustly.
+        def sparse_weight(i: int) -> float:
+            dt = self._lexical_tokens(docs[i])
+            hits = query_tokens & dt
+            if not hits:
+                return 0.0
+            # weight rare query tokens heavily, ignore noise tokens
+            w = sum(idf[t] for t in hits if t not in _NOISE)
+            # year target present in the chunk is the strongest exact signal
+            if query_years:
+                yid = set(self._extract_years(docs[i]))
+                if any(y in yid for y in query_years):
+                    w += 8.0
+            dl = (docs[i] or "").lower()
+            # only meaningful phrases count: "fiscal year" appears in nearly
+            # every chunk, so it must not add weight; real signal phrases are
+            # the rest (e.g. "net income", "operating income").
+            strong_phrases = [p for p in query_bigrams if p not in ("fiscal year", "year fiscal", "income fiscal")]
+            phrase_hits = sum(1 for p in strong_phrases if p in dl)
+            w += phrase_hits * 6.0
+            return w
+
+        # Primary sort: sparse weight (exact-year + phrase + rare-term signals).
+        # Fallback: dense distance (tie-break for the same sparse weight).
+        # This puts the exact row (e.g. "Net income: 2022: 72,738") first even
+        # when its raw embedding distance is worse than unrelated chunks.
+        w_vals = [sparse_weight(i) for i in range(len(docs))]
+        max_w = max(w_vals) if w_vals else 1.0
+        w_range = max(max_w, 1e-9)
+
+        def hybrid_score(i: int) -> tuple:
+            # (primary sparse bucket, dense distance as tiebreak)
+            return (-w_vals[i], dists[i])
+
+        order = sorted(range(len(docs)), key=hybrid_score)
         final_k = limit if limit is not None else settings.RAG_RETRIEVAL_K
-        order = [i for i in order][:final_k]
+        order = order[:final_k]
         ids_inner = result.get("ids")
         if ids_inner and isinstance(ids_inner[0], list):
             ids_sorted = [ids_inner[0][i] for i in order]
