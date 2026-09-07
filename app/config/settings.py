@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     # Vector Store Settings
     CHROMA_PERSIST_DIRECTORY: str = "./chroma_db"
     RAG_SEARCH_LIMIT: int = 3
+
+    # RAG Search Settings
+    RAG_RETRIEVAL_K: int = 10  # Number of results to retrieve from vector DB
+    RAG_FINAL_K: int = 3       # Number of results to send to LLM
+
+    # Document Chunking Settings
+    RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)
+    RAG_CHUNK_OVERLAP: int = 100   # Characters of overlap between chunks
     
     # System Settings
     SYSTEM_PROMPT: str = (
