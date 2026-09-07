@@ -110,6 +110,7 @@ class VectorStoreService:
         collection_name: str,
         query_embeddings: List[float],
         n_results: Optional[int] = None,
+        where: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Search for similar documents in a collection.
 
@@ -118,10 +119,13 @@ class VectorStoreService:
         lower distance = more similar (cosine in this deployment).
         """
         collection = self.get_or_create_collection(collection_name)
+        kwargs = {"include": ["documents", "metadatas", "distances"]}
+        if where:
+            kwargs["where"] = where
         return collection.query(
             query_embeddings=query_embeddings,
             n_results=n_results if n_results is not None else settings.RAG_RETRIEVAL_K,
-            include=["documents", "metadatas", "distances"],
+            **kwargs,
         )
 
     def clear_collection(self, collection_name: str):

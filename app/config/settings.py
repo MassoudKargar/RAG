@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from functools import lru_cache
 
 class Settings(BaseSettings):
@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     # chunks) need a bigger pool so rare exact-value chunks (e.g. an identifier)
     # survive dense ranking and reach the lexical boost step.
     RAG_RETRIEVAL_CANDIDATES: int = 800
+
+    # Fiscal years present in the corpus; used by year_filter() to decide
+    # whether a year mentioned in a query should narrow retrieval or produce an
+    # empty result (out-of-corpus years -> no results -> honest no-answer).
+    RAG_CORPORA_YEARS: Optional[List[int]] = None
 
     # Document Chunking Settings
     RAG_CHUNK_SIZE: int = 800      # Characters per chunk (not tokens - chars are simpler)

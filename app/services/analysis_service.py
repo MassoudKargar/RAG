@@ -227,9 +227,12 @@ class SmartAnalysisService:
             return {"success": False, "error": "No RAG service configured"}
 
         try:
-            # Search for similar documents
+            # Search for similar documents (year-filtered when the query names one)
             embedding = self.rag_service.embedding_provider.create_embedding(query)
-            search_result = self.rag_service.search_similar_documents(embedding, query=query)
+            search_result = self.rag_service.search_similar_documents(
+                embedding, query=query,
+                where=self.rag_service.year_filter(query),
+            )
 
             # Extract relevant chunks (ChromaDB returns list-of-lists)
             documents = (search_result.get("documents") or [[]])[0] or []

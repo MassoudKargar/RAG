@@ -158,7 +158,46 @@ class RAGService:
             tokens.add(m.group(0).lower())
         return tokens
 
-    def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None) -> Dict[str, Any]:
+    _PERSIAN_DIGITS = str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789")
+
+    def _normalize_digits(self, text: str) -> str:
+        """Convert Persian/Arabic digits to Latin so year isolation works."""
+        return text.translate(self._PERSIAN_DIGITS)
+
+    def _extract_years(self, text: str) -> List[int]:
+        """Return sorted unique years (19xx/20xx) mentioned in a query."""
+        if not text:
+            return []
+        t = self._normalize_digits(text)
+        years = [int(m) for m in re.findall(r"\b(?:19|20)\d{2}\b", t)]
+        return sorted(set(years))
+
+    def year_filter(self, text: Optional[str]) -> Optional[Dict[str, Any]]:
+        """Build a Chroma metadata filter that narrows retrieval to fiscal_years
+        mentioned in the query (e.g. "fiscal year 2024" -> {"fiscal_year": 2024}).
+
+        Returns None when the query names no year (unfiltered search), which
+        keeps semantic queries working across the whole corpus.
+        """
+        if not text:
+            return None
+        years = self._extract_years(text)
+        if not years:
+            return None
+        # Only years that look like fiscal years in our corpus (>= 2022) narrow
+        # anything; older years (e.g. 2015 in a negative query) would produce an
+        # empty filter, which is exactly what we want for halluciation tests.
+        corpora_years = getattr(settings, "RAG_CORPORA_YEARS", None)
+        if corpora_years:
+            years = [y for y in years if y in corpora_years]
+        if not years:
+            # Year outside the corpus -> match nothing (honest no-answer path)
+            return {"fiscal_year": -1}
+        if len(years) == 1:
+            return {"fiscal_year": years[0]}
+        return {"fiscal_year": {"$in": years}}
+
+    def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.
 
         ``limit`` defaults to settings.RAG_RETRIEVAL_K (can be larger than the
@@ -179,6 +218,7 @@ class RAGService:
             collection_name=self.collection_name,
             query_embeddings=embedding,
             n_results=candidates,
+            where=where,
         )
         if not query:
             return result
