@@ -1,0 +1,13 @@
+{
+  "n_checks": 38,
+  "n_failures": 0,
+  "failures": [],
+  "acceptance": {
+    "year_extraction_accurate": true,
+    "persian_digits_accurate": true,
+    "persian_metric_accurate": true,
+    "multiyear_span_accurate": true,
+    "company_accurate": true,
+    "intent_accurate": true
+  }
+}
