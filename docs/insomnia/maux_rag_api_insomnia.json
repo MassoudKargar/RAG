@@ -1,162 +1,256 @@
 {
   "_type": "export",
   "__export_format": 4,
-  "__export_date": "2026-09-07T16:05:00.000Z",
-  "__export_source": "openclaw-auto",
+  "__export_source": "insomnia.desktop.app:v2023.1.0",
+  "__export_date": "2026-09-08T07:00:00.000Z",
+  "__export_updated_at": "2026-09-08T07:00:00.000Z",
   "resources": [
     {
-      "_id": "__WORKSPACE__",
       "_type": "workspace",
-      "name": "Maux RAG API",
+      "_id": "wrk_rag_main",
+      "name": "Maux RAG API — full test (production)",
+      "description": "Complete retrieval + chat test collection against rag.masoudkargar.com (production).\n\nSETUP (once):\n1. Open Environment (Ctrl/Cmd+E), select environment \"Production\"\n2. Paste your RAG API key into `apiKey` (from /var/rag_app/.env RAG_API_KEY)\n3. baseUrl is already https://rag.masoudkargar.com — hit Send on anything.\n\nIMPORTANT: all paths have NO trailing slash. /v1/vector_db/search_documents (not .../)\nThe /docs endpoint is the interactive Swagger UI (HTML is normal there).",
       "scope": "collection"
     },
     {
-      "_id": "__ENV__",
       "_type": "environment",
+      "_id": "env_rag_base",
+      "parentId": "wsr_rag_main",
       "name": "Base Environment",
-      "data": {
-        "base_url": "https://rag.masoudkargar.com",
-        "api_key": "YOUR_RAG_API_KEY"
-      }
+      "data": {},
+      "isPrivate": false
     },
     {
-      "_id": "__ENV_PROD__",
       "_type": "environment",
-      "parentId": "__ENV__",
+      "_id": "env_rag_prod",
+      "parentId": "ws_rag_main",
       "name": "Production",
       "data": {
-        "base_url": "https://rag.masoudkargar.com",
-        "api_key": "rag_live_YOUR_KEY_HERE"
-      }
+        "baseUrl": "https://rag.masoudkargar.com",
+        "api_key": "",
+        "chat_model": "deepseek/deepseek-v4-flash-0731"
+      },
+      "color": "#7d69cb"
     },
     {
-      "_id": "__ENV_LOCAL__",
-      "_type": "environment",
-      "parentId": "__ENV__",
-      "name": "Local",
-      "data": {
-        "base_url": "http://127.0.0.1:8000",
-        "api_key": "rag_live_YOUR_KEY_HERE"
-      }
+      "_type": "request_group",
+      "_id": "grp_rag_health",
+      "name": "1. Health",
+      "parentId": "ws_rag_main"
     },
     {
-      "_id": "__REQ_HEALTH__",
       "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Health Check",
+      "_id": "req_health",
+      "parentId": "grp_rag_health",
+      "name": "Health check",
       "method": "GET",
-      "url": "{{ base_url }}/v1/health",
+      "url": "{{ baseUrl }}/v1/health",
       "headers": [
         { "name": "X-API-Key", "value": "{{ api_key }}" }
-      ]
+      ],
+      "body": {},
+      "metaSortKey": -100
     },
     {
-      "_id": "__REQ_ANALYSIS_STATUS__",
       "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Analysis Status",
+      "_id": "req_root",
+      "parentId": "grp_rag_health",
+      "name": "Root (welcome)",
       "method": "GET",
-      "url": "{{ base_url }}/v1/analysis/status",
+      "url": "{{ baseUrl }}/",
+      "headers": [
+        { "name": "X-API-KEY", "value": "{{ api_key }}" }
+      ],
+      "body": {},
+      "metaSortKey": -99
+    },
+    {
+      "_type": "request_group",
+      "_id": "grp_rag_retrieval",
+      "name": "2. Retrieval (exact-value queries)",
+      "parentId": "ws_rag_main"
+    },
+    {
+      "_type": "request",
+      "_id": "req_search_net_income",
+      "parentId": "grp_rag_retrieval",
+      "name": "net income FY2024",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/vector_db/search_documents?limit=10",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"Microsoft net income fiscal year 2024\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_search_revenue_persian",
+      "parentId": "grp_rag_retrieval",
+      "name": "درآمد ۲۰۲۵ (persian)",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/vector_db/search_documents?limit=10",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"درآمد مایکروسافت در سال مالی ۲۰۲۵ چه مقدار بود؟\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_search_multiyear",
+      "parentId": "grp_rag_retrieval",
+      "name": "multiyear (2022-2026)",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/vector_db/search_documents?limit=15",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"Microsoft revenue from fiscal 2022 through fiscal 2026\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_search_balance",
+      "parentId": "grp_rag_retrieval",
+      "name": "balance sheet total assets FY2024",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/vector_db/search_documents?limit=8",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"What were Microsoft's total assets in fiscal year 2024?\"\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_search_negative",
+      "parentId": "grp_rag_retrieval",
+      "name": "negative (other company → empty)",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/vector_db/search_documents?limit=5",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"prompt\": \"Apple's revenue in fiscal year 2024\"\n}"
+      }
+    },
+    {
+      "_type": "request_group",
+      "_id": "grp_rag_chat",
+      "name": "3. Chat completions",
+      "parentId": "ws_rag_main"
+    },
+    {
+      "_type": "request",
+      "_id": "req_chat_completion",
+      "parentId": "grp_rag_chat",
+      "name": "chat/completions (non-stream)",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/chat/completions",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"model\": \"{{ chat_model }}\",\n  \"stream\": false,\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"What was Microsoft's net income in fiscal year 2024?\" }\n  ]\n}"
+      }
+    },
+    {
+      "_type": "request",
+      "_id": "req_chat_stream",
+      "parentId": "grp_rag_chat",
+      "name": "chat/completions (stream)",
+      "method": "POST",
+      "url": "{{ baseUrl }}/v1/chat/completions",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "X-API-Key", "value": "{{ api_key }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"model\": \"{{ chat_model }}\",\n  \"stream\": true,\n  \"messages\": [\n    { \"role\": \"user\", \"content\": \"What was Microsoft's total revenue in fiscal year 2025?\" }\n  ]\n}"
+      }
+    },
+    {
+      "_type": "request_group",
+      "_id": "grp_rag_analysis",
+      "name": "4. Analysis",
+      "parentId": "ws_rag_main"
+    },
+    {
+      "_type": "request",
+      "_id": "req_analysis_status",
+      "parentId": "grp_rag_analysis",
+      "name": "analysis/status",
+      "method": "GET",
+      "url": "{{ baseUrl }}/v1/analysis/status",
       "headers": [
         { "name": "X-API-Key", "value": "{{ api_key }}" }
-      ]
+      ],
+      "body": {}
     },
     {
-      "_id": "__REQ_INIT__",
       "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Initialize Collection",
+      "_id": "req_analysis_query",
+      "parentId": "grp_rag_analysis",
+      "name": "analysis/query",
       "method": "POST",
-      "url": "{{ base_url }}/v1/vector_db/initialize_collection",
+      "url": "{{ baseUrl }}/v1/analysis/query?query=What%20was%20Microsoft%27s%20net%20income%20in%20fiscal%20year%202024%3F&use_rag=true",
       "headers": [
         { "name": "X-API-Key", "value": "{{ api_key }}" }
-      ]
-    },
-    {
-      "_id": "__REQ_ADD__",
-      "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Add Document (legacy, single embedding)",
-      "method": "POST",
-      "url": "{{ base_url }}/v1/vector_db/add_document",
-      "headers": [
-        { "name": "X-API-Key", "value": "{{ api_key }}" },
-        { "name": "Content-Type", "value": "application/json" }
       ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"text\": \"متن سند را اینجا بنویسید...\",\n  \"metadata\": {\n    \"source\": \"example.txt\",\n    \"category\": \"test\"\n  }\n}"
-      }
+      "body": {}
     },
     {
-      "_id": "__REQ_UPLOAD__",
-      "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Upload Chunked Document (recommended)",
-      "method": "POST",
-      "url": "{{ base_url }}/v1/vector_db/documents",
-      "headers": [
-        { "name": "X-API-Key", "value": "{{ api_key }}" },
-        { "name": "Content-Type", "value": "application/json" }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"text\": \"<متن کامل سند، می‌تواند خیلی بزرگ باشد>\",\n  \"source\": \"large_doc.txt\",\n  \"metadata\": {\n    \"document_id\": \"my_doc_1\",\n    \"topic\": \"قوانین\"\n  }\n}"
-      }
+      "_type": "request_group",
+      "_id": "grp_rag_docs",
+      "name": "5. Document management",
+      "parentId": "ws_rag_main"
     },
     {
-      "_id": "__REQ_SEARCH__",
       "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Search Documents",
+      "_id": "req_doc_upload",
+      "parentId": "grp_rag_docs",
+      "name": "upload document (chunked)",
       "method": "POST",
-      "url": "{{ base_url }}/v1/vector_db/search_documents?limit=10",
+      "url": "{{ baseUrl }}/v1/vector_db/documents",
       "headers": [
-        { "name": "X-API-Key", "value": "{{ api_key }}" },
-        { "name": "Content-Type", "value": "application/json" }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"prompt\": \"سوال شما درباره محتوای اسناد...\"\n}"
-      }
-    },
-    {
-      "_id": "__REQ_CHAT__",
-      "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Chat Completion (RAG)",
-      "method": "POST",
-      "url": "{{ base_url }}/v1/chat/completions",
-      "headers": [
-        { "name": "X-API-Key", "value": "{{ api_key }}" },
-        { "name": "Content-Type", "value": "application/json" }
-      ],
-      "body": {
-        "mimeType": "application/json",
-        "text": "{\n  \"model\": \"deepseek/deepseek-v4-flash-0731\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"مقدار TEST-003 چیست؟\"\n    }\n  ],\n  \"stream\": false\n}"
-      }
-    },
-    {
-      "_id": "__REQ_ANALYSIS__",
-      "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Analysis Query (RAG + LLM)",
-      "method": "POST",
-      "url": "{{ base_url }}/v1/analysis/query?query={{'سوال شما'|urlencode}}&use_rag=true",
-      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
         { "name": "X-API-Key", "value": "{{ api_key }}" }
-      ]
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"text\": \"This is a small test document about Microsoft Azure cloud services and fiscal 2024 results.\",\n  \"metadata\": {\n    \"document_id\": \"insomnia-test-001\",\n    \"topic\": \"test\"\n  }\n}"
+      }
     },
     {
-      "_id": "__REQ_CLEAR__",
       "_type": "request",
-      "parentId": "__WORKSPACE__",
-      "name": "Clear Collection (ALL documents!)",
+      "_id": "req_doc_clear",
+      "parentId": "grp_rag_docs",
+      "name": "clear collection (danger)",
       "method": "DELETE",
-      "url": "{{ base_url }}/v1/vector_db/clear_collection",
+      "url": "{{ baseUrl }}/v1/vector_db/clear_collection",
       "headers": [
         { "name": "X-API-Key", "value": "{{ api_key }}" }
-      ]
+      ],
+      "body": {}
     }
   ]
 }
