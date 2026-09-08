@@ -253,6 +253,11 @@ class RAGService:
             return "Item 7A"
         return None
 
+    @staticmethod
+    def _no_answer_result() -> Dict[str, Any]:
+        """Empty retrieval result (honest no-answer path)."""
+        return {"ids": [[]], "documents": [[]], "metadatas": [[]], "distances": [[]]}
+
     def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.
 
@@ -267,6 +272,18 @@ class RAGService:
            ``TEST-003``, numbers) float to the top via a distance boost.
         3. Return the top ``limit`` (RAG_RETRIEVAL_K) after re-rank.
         """
+        # Honest no-answer path for other companies: the corpus is Microsoft
+        # 10-K only. When the query names a different company explicitly
+        # (Apple/Amazon/Google...) AND does NOT also mention Microsoft, return
+        # an empty pool so the LLM cannot hallucinate Microsoft figures as the
+        # answer. If the query asks about Microsoft anywhere, search proceeds.
+        if query:
+            company = query_analyzer.extract_company(query)
+            normalized_q = query_analyzer.normalize(query)
+            mentions_msft = "مایکروسافت" in normalized_q or "microsoft" in normalized_q or "ماکروسافت" in normalized_q
+            if company and company != "microsoft" and not mentions_msft:
+                return self._no_answer_result()
+
         candidates = getattr(settings, "RAG_RETRIEVAL_CANDIDATES", 300)
         if limit is not None:
             candidates = max(candidates, limit)
