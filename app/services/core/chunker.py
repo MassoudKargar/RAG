@@ -66,8 +66,17 @@ class ChunkMetadata:
 _SECTION_PATTERNS = [
     re.compile(r"^(#{1,6})\s+(.+)$"),                                # markdown
     re.compile(r"^(?:بخش|سرفصل|فصل|قسمت)\s*[۰-۹0-9]*\s*[:：.\-]?\s*(.+)?$"),  # Persian
-    re.compile(r"^(?:Section|Chapter|Part)\s+\d+[:\-.]?\s*(.*)$", re.IGNORECASE),  # English
+    re.compile(r"^(?:Section|Chapter)\s+[A-Za-z0-9]+[:\-.]?\s*(.*)$", re.IGNORECASE),  # English
+    # SEC 10-K structure: "PART I", "Item 1.", "Item 7A."
+    re.compile(r"^(?:PART)\s+[IVXLCDM]+\s*[:\.\-]?\s*(.*)$", re.IGNORECASE),
+    re.compile(r"^Item\s+\d+[A-Za-z]?[:\.\-]?\s*(.*)$", re.IGNORECASE),
 ]
+
+# SEC filings print the page number as a standalone line (e.g. "42" alone on
+# a line) at page boundaries. Used to attach page metadata to chunks. Only
+# lines whose number forms a plausible ascending page sequence are treated as
+# page markers (avoids false positives like TOC/CIK numbers).
+_PAGE_LINE_RE = re.compile(r"^\s*(\d{1,3})\s*$")
 
 
 _YEAR_RE = re.compile(r"\b(?:19|20)\d{2}\b")
@@ -93,7 +102,12 @@ def _detect_section(paragraph: str) -> Optional[str]:
     for pattern in _SECTION_PATTERNS:
         m = pattern.match(stripped)
         if m:
-            label = (m.group(2) or m.group(1) or stripped).strip().rstrip(":#.-—–")
+            # patterns have either group 1 (label) or group 2 (label) depending
+            # on the pattern; fall back to the whole line
+            try:
+                label = (m.group(2) or m.group(1) or stripped).strip().lstrip(":#.-—– ").rstrip(":#.-—–")
+            except IndexError:
+                label = (m.group(1) or stripped).strip().lstrip(":#.-—– ").rstrip(":#.-—–")
             return label or stripped
     return None
 
@@ -112,6 +126,59 @@ class ChunkerService:
             raise ValueError("chunk_overlap must be >= 0")
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+
+    def _detect_pages(self, paragraphs: List[Tuple[int, int, str]]) -> List[Optional[int]]:
+        """Return a list aligned with ``paragraphs`` giving the page number in
+        effect at each paragraph (None when undetermined).
+
+        Heuristic: standalone numeric lines (e.g. "42") are page markers when
+        they form an ascending sequence (step 1..2). Numbers that jump wildly
+        (TOC page refs, CIK numbers) break the run and are ignored.
+        """
+        pages: List[Optional[int]] = [None] * len(paragraphs)
+        # collect candidate number lines with their paragraph indices
+        candidates = []
+        for i, (_, _, para) in enumerate(paragraphs):
+            m = _PAGE_LINE_RE.match(para)
+            if m:
+                n = int(m.group(1))
+                if 1 <= n <= 999:
+                    candidates.append((i, n))
+        # find the longest run where numbers ascend by 1 (tolerating small gaps
+        # of repeated/missing pages, but not wild jumps)
+        best_run = []
+        cur = []
+        for i in range(len(candidates)):
+            if not cur:
+                cur = [candidates[i]]
+                continue
+            prev_idx, prev_n = cur[-1]
+            cur_idx, cur_n = candidates[i]
+            step = cur_n - prev_n
+            if 0 <= step <= 2 and cur_idx - prev_idx <= 20:
+                cur.append(candidates[i])
+            else:
+                if len(cur) >= 3 and len(cur) > len(best_run or []):
+                    best_run = cur
+                cur = [candidates[i]]
+        if len(cur) >= 3 and len(cur) > len(best_run or []):
+            best_run = cur
+
+        if not best_run:
+            return pages
+
+        run_start_n, run_end_n = best_run[0][1], best_run[-1][1]
+        for i, n in best_run:
+            if run_start_n <= n <= run_end_n:
+                pages[i] = n
+        # forward-fill: paragraphs after a page marker inherit that page until
+        # the next one
+        last_page = None
+        for i in range(len(paragraphs)):
+            if pages[i] is not None:
+                last_page = pages[i]
+            pages[i] = last_page
+        return pages
 
     def _split_into_paragraphs(self, text: str) -> List[Tuple[int, int, str]]:
         """Split text into (start, end, text) paragraphs including positions.
@@ -245,6 +312,7 @@ class ChunkerService:
                 total_chunks=0,  # patched at the end
                 source=source,
                 section=current_section,
+                page=current_page,
                 chunk_start_char=start_pos,
                 chunk_end_char=start_pos + len(chunk_text),
             )
@@ -262,18 +330,28 @@ class ChunkerService:
 
         stream_pos = 0  # cursor over "\n\n".join(paragraph texts)
         first_para = True
+        page_stream = self._detect_pages(paragraphs)
+        current_page: Optional[int] = None
 
-        for start, end, para in paragraphs:
+        for idx, (start, end, para) in enumerate(paragraphs):
+            if page_stream[idx] is not None:
+                current_page = page_stream[idx]
             # Section headings start a fresh chunk (semantic boundary priority #1)
             heading = _detect_section(para)
             if heading is not None and len(para) <= 200:
-                if current_chunk_text.strip() and current_has_body:
-                    # Flush so the heading binds to its own content
-                    chunks.append(make_chunk(current_chunk_text, current_chunk_start))
-                    current_chunk_text = ""
-                    current_chunk_size = 0
-                    current_has_body = False
-                current_section = heading
+                # Repeated page headers for the SAME section (e.g. "PART I" /
+                # "Item 1A" printed at the top of every page) are not new
+                # sections: do not flush or re-set the section. Only a heading
+                # DIFFERENT from the current one starts a fresh section.
+                is_repeat = heading == current_section
+                if not is_repeat:
+                    if current_chunk_text.strip() and current_has_body:
+                        # Flush so the heading binds to its own content
+                        chunks.append(make_chunk(current_chunk_text, current_chunk_start))
+                        current_chunk_text = ""
+                        current_chunk_size = 0
+                        current_has_body = False
+                    current_section = heading
 
             sep = 0 if first_para else 2  # "\n\n" separator length
             first_para = False
@@ -345,6 +423,12 @@ class ChunkerService:
             # ensure the canonical keys are never overridden by user metadata
             chunk.metadata["document_id"] = document_id
             chunk.metadata["chunk_index"] = chunk.metadata.get("chunk_index", 0)
+            # chunks before the first detected heading/page marker (cover page,
+            # TOC, preamble) get a stable fallback so audits see a section/page
+            if not chunk.metadata.get("section"):
+                chunk.metadata["section"] = "Cover and Index"
+            if chunk.metadata.get("page") is None:
+                chunk.metadata["page"] = 1
             # fiscal years explicitly present in this chunk's text (used to
             # match multi-year tables: a table row with FY2024/FY2025/FY2026
             # values lives under one chunk but must answer any of those years)

@@ -1,0 +1,89 @@
+{
+  "per_year": {
+    "2022": {
+      "document_id": "microsoft-10k-2022",
+      "chunks": 716,
+      "empty_chunks": 0,
+      "bad_document_id": 0,
+      "missing_section": 0,
+      "missing_page": 0,
+      "mid_sentence_cuts": 33,
+      "table_chunks": 7,
+      "table_header_loss": 0,
+      "deterministic_rechunk": true,
+      "duplicate_ids_in_doc": false
+    },
+    "2023": {
+      "document_id": "microsoft-10k-2023",
+      "chunks": 680,
+      "empty_chunks": 0,
+      "bad_document_id": 0,
+      "missing_section": 0,
+      "missing_page": 0,
+      "mid_sentence_cuts": 36,
+      "table_chunks": 35,
+      "table_header_loss": 0,
+      "deterministic_rechunk": true,
+      "duplicate_ids_in_doc": false
+    },
+    "2024": {
+      "document_id": "microsoft-10k-2024",
+      "chunks": 684,
+      "empty_chunks": 0,
+      "bad_document_id": 0,
+      "missing_section": 0,
+      "missing_page": 0,
+      "mid_sentence_cuts": 43,
+      "table_chunks": 37,
+      "table_header_loss": 0,
+      "deterministic_rechunk": true,
+      "duplicate_ids_in_doc": false
+    },
+    "2025": {
+      "document_id": "microsoft-10k-2025",
+      "chunks": 593,
+      "empty_chunks": 0,
+      "bad_document_id": 0,
+      "missing_section": 0,
+      "missing_page": 0,
+      "mid_sentence_cuts": 20,
+      "table_chunks": 35,
+      "table_header_loss": 0,
+      "deterministic_rechunk": true,
+      "duplicate_ids_in_doc": false
+    },
+    "2026": {
+      "document_id": "microsoft-10k-2026",
+      "chunks": 608,
+      "empty_chunks": 0,
+      "bad_document_id": 0,
+      "missing_section": 0,
+      "missing_page": 0,
+      "mid_sentence_cuts": 21,
+      "table_chunks": 38,
+      "table_header_loss": 0,
+      "deterministic_rechunk": true,
+      "duplicate_ids_in_doc": false
+    }
+  },
+  "summary": {
+    "total_chunks": 3281,
+    "total_empty": 0,
+    "total_bad_document_id": 0,
+    "total_missing_section": 0,
+    "total_missing_page": 0,
+    "total_mid_sentence": 153,
+    "total_table_header_loss": 0,
+    "duplicate_ids_any_run": false,
+    "deterministic_100pct": true,
+    "acceptance": {
+      "empty_chunks_zero": true,
+      "duplicate_ids_zero": true,
+      "bad_document_id_zero": true,
+      "missing_section_le_0.1pct": true,
+      "missing_page_le_1pct": true,
+      "mid_sentence_le_5pct": true,
+      "table_header_loss_le_2pct": true
+    }
+  }
+}

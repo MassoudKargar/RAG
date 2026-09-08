@@ -1,0 +1,120 @@
+{
+  "plan": "MSFT RAG 19-phase production benchmark",
+  "current_phase": 1,
+  "phase_status": "audit_ready",
+  "state_file_touch": "2026-09-08T08:55:00Z",
+  "phases": [
+    {
+      "n": 0,
+      "name": "inspect + baseline",
+      "commit": "25037a4",
+      "status": "done"
+    },
+    {
+      "n": 1,
+      "name": "chunking_audit",
+      "status": "in_progress",
+      "next": "apply chunker section/page fixes + XBRL noise filter in sec_html_to_text; re-extract 5 files; re-run tools/chunking_audit.py; commit; then re-ingest + re-benchmark"
+    },
+    {
+      "n": 2,
+      "name": "metadata_index_integrity",
+      "status": "pending",
+      "checks": [
+        "fiscal_year present 100%",
+        "years_present contains fiscal_year",
+        "document_id prefix matches microsoft-10k-",
+        "chunk_id format <doc>::chunk_%05d",
+        "index count == DB count",
+        "no stale documents"
+      ]
+    },
+    {
+      "n": 3,
+      "name": "query_analyzer",
+      "status": "pending"
+    },
+    {
+      "n": 4,
+      "name": "year_aware_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 5,
+      "name": "true_hybrid_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 6,
+      "name": "exact_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 7,
+      "name": "multi_year_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 8,
+      "name": "persian_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 9,
+      "name": "section_aware_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 10,
+      "name": "table_retrieval",
+      "status": "pending"
+    },
+    {
+      "n": 11,
+      "name": "regression_benchmark",
+      "status": "pending"
+    },
+    {
+      "n": 12,
+      "name": "negative_hallucination",
+      "status": "pending"
+    },
+    {
+      "n": 13,
+      "name": "cross_document",
+      "status": "pending"
+    },
+    {
+      "n": 14,
+      "name": "rag_llm",
+      "status": "pending"
+    },
+    {
+      "n": 15,
+      "name": "performance",
+      "status": "pending"
+    },
+    {
+      "n": 16,
+      "name": "concurrency",
+      "status": "pending"
+    },
+    {
+      "n": 17,
+      "name": "failure_recovery",
+      "status": "pending"
+    },
+    {
+      "n": 18,
+      "name": "security",
+      "status": "pending"
+    },
+    {
+      "n": 19,
+      "name": "full_benchmark_final_report",
+      "status": "pending"
+    }
+  ],
+  "resume_command": "cd /var/rag_app && git add tools/ app/ && git commit -m 'phase1: XBRL noise filter + section/page chunk metadata' && systemctl restart rag-api",
+  "notes": "On heartbeat or resume: read this file; if resume_command set, run it; else execute current_phase next step per docs/PRODCES.md; update progress_card + commit after each phase."
+}

@@ -24,6 +24,23 @@ _CURRENCY_RE = re.compile(r"^[\$€£¥₹,;&#x2007\s]*$|^\$")
 # Change", "Change", "%"): not years, not data values — ignored for alignment
 _LABEL_COLS = ("percentage change", "change", "growth", "%")
 
+# Inline XBRL metadata noise lines that pollute extracted text: taxonomy
+# member references (us-gaap:...Member), CIK/registrant numbers, ISO dates,
+# XBRL namespace URIs, and pure namespace-prefixed tokens. These never carry
+# financial content and break sentence flow when chunked.
+_MEMBER_NOISE_RE = re.compile(
+    r"^(?:"
+    r"(?:[\w-]+:){1,3}[\w.]*(?:Member|Fact|Axis|Domain|LineItems|Table|Abstract)?$"
+    r"|\d{4}-\d{2}-\d{2}"
+    r"|0{3,}\d{5,}"
+    r"|https?://\S+"
+    r"|\d{2}:\d{2}"
+    r")\s*$"
+)
+
+_AXIS_PREFIX_RE = re.compile(r"^(?:us-gaap|msft|srt|dei|sci|country|utr|dtr|ecd|ix|link|xbrli|xbrldi|xbrldt):")
+_ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 
 def _cell_text(cell) -> str:
     return cell.get_text(" ", strip=True)
@@ -94,6 +111,21 @@ def _tables_to_rows(soup: "BeautifulSoup") -> None:
             table.replace_with("\n".join(lines_out))
 
 
+def _is_noise_line(s: str) -> bool:
+    """True when a stripped line is pure Inline XBRL metadata noise."""
+    if not s:
+        return False
+    if _MEMBER_NOISE_RE.match(s):
+        return True
+    # member/axis tokens like "us-gaap:PerformanceSharesMember" or
+    # "msft:AmyEHoodMember"
+    if _AXIS_PREFIX_RE.match(s) and len(s) <= 120 and ":" in s:
+        return True
+    if _ISO_DATE_RE.match(s):
+        return True
+    return False
+
+
 def extract(path: str) -> str:
     with open(path, encoding="utf-8", errors="ignore") as f:
         soup = BeautifulSoup(f.read(), "html.parser")
@@ -104,6 +136,10 @@ def extract(path: str) -> str:
         br.replace_with("\n")
     text = soup.get_text("\n")
     text = re.sub(r"[ \t]+", " ", text)
+    # drop Inline XBRL metadata lines (never financial content)
+    text = "\n".join(
+        ln for ln in text.split("\n") if not _is_noise_line(ln.strip())
+    )
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
 
