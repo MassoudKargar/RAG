@@ -11,6 +11,7 @@ from app.services.providers.avalai_service import AvalaiProvider
 from app.services.providers.openrouter_service import OpenRouterProvider
 from app.services.providers.local_embedding_service import LocalEmbeddingProvider
 from app.services.base import BaseAIProvider
+from app.services.core.query_analyzer import query_analyzer
 
 logger = logging.getLogger(__name__)
 
@@ -167,12 +168,15 @@ class RAGService:
         return text.translate(self._PERSIAN_DIGITS)
 
     def _extract_years(self, text: str) -> List[int]:
-        """Return sorted unique years (19xx/20xx) mentioned in a query."""
+        """Return sorted unique years (19xx/20xx) mentioned in a query.
+
+        Delegates to the query analyzer, which also expands explicit ranges
+        ("fiscal 2022 through fiscal 2026" -> [2022..2026]) so multi-year
+        filters cover every intermediate fiscal year.
+        """
         if not text:
             return []
-        t = self._normalize_digits(text)
-        years = [int(m) for m in re.findall(r"\b(?:19|20)\d{2}\b", t)]
-        return sorted(set(years))
+        return query_analyzer.extract_years(text)
 
     def year_filter(self, text: Optional[str]) -> Optional[Dict[str, Any]]:
         """Build a Chroma metadata filter that narrows retrieval to fiscal_years

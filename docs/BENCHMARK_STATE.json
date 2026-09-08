@@ -1,6 +1,6 @@
 {
   "plan": "MSFT RAG 19-phase production benchmark",
-  "current_phase": 4,
+  "current_phase": 5,
   "phase_status": "next",
   "state_file_touch": "2026-09-08T08:55:00Z",
   "phases": [
@@ -32,7 +32,8 @@
     {
       "n": 3,
       "name": "query_analyzer",
-      "status": "done"
+      "status": "done",
+      "result": "multiyear_all_years 0.3 -> 0.9"
     },
     {
       "n": 4,
