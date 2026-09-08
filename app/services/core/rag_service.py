@@ -272,9 +272,8 @@ class RAGService:
         # Stopword-ish financial tokens that appear in almost every chunk and so
         # carry no signal (their IDF is low); we exclude them from the sparse
         # weight so the ranking is driven by discriminative terms only.
-        _NOISE = {"net", "income", "fiscal", "year", "microsoft", "revenue",
-                  "operating", "earnings", "per", "share", "basic", "diluted",
-                  "expense", "total"}
+        _NOISE = {"net", "income", "fiscal", "year", "microsoft",
+                  "operating", "per", "share", "basic", "diluted", "expense"}
 
         # sparse ranking driven by rare terms (year target + identifiers) +
         # phrase matches; RRF fuses it with dense dist robustly.
@@ -294,7 +293,7 @@ class RAGService:
             # only meaningful phrases count: "fiscal year" appears in nearly
             # every chunk, so it must not add weight; real signal phrases are
             # the rest (e.g. "net income", "operating income").
-            strong_phrases = [p for p in query_bigrams if p not in ("fiscal year", "year fiscal", "income fiscal")]
+            strong_phrases = [p for p in query_bigrams if p not in ("fiscal year", "year fiscal", "income fiscal", "revenue fiscal")]
             phrase_hits = sum(1 for p in strong_phrases if p in dl)
             w += phrase_hits * 6.0
             return w
