@@ -153,11 +153,17 @@ class RAGService:
     # Retrieval
     # ------------------------------------------------------------------
     def _lexical_tokens(self, text: Optional[str]) -> set:
-        """Extract searchable tokens: identifiers (TEST-003), numbers, words."""
+        """Extract searchable tokens: identifiers (TEST-003), numbers, words.
+
+        Persian/Arabic digits are normalized to Latin digits first so that a
+        query written with Persian digits ("۲۰۲۶") matches document tokens
+        written with Latin digits ("2026").
+        """
         if not text:
             return set()
+        text = self._normalize_digits(text)
         tokens = set()
-        for m in re.finditer(r"[A-Za-z][A-Za-z0-9_-]*|[۰-۹0-9]+", text):
+        for m in re.finditer(r"[A-Za-z][A-Za-z0-9_-]*|[0-9]+", text):
             tokens.add(m.group(0).lower())
         return tokens
 

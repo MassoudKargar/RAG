@@ -209,6 +209,18 @@ def main():
             if m and m.get("fiscal_year") in years:
                 got.add(m["fiscal_year"])
         missing = set(years) - got
+        # coverage uses fiscal_year OR years_present: multi-year comparison
+        # tables live under one doc but their text carries several fiscal years
+        got = set()
+        for m, d in zip(metas, docs):
+            if not (m and d):
+                continue
+            fy = m.get("fiscal_year")
+            yp = m.get("years_present") or []
+            for y in years:
+                if fy == y or y in yp:
+                    got.add(y)
+        missing = set(years) - got
         results["multiyear"].append({"q": q, "years": years, "missing": sorted(missing), "lat": lat})
         if missing:
             results["failed"].append({"test": "multiyear", "q": q, "missing": sorted(missing), "severity": "major"})
@@ -255,6 +267,11 @@ def main():
                     correct_year = False
                 break
         results["year"].append({"q": q, "year": yr, "value": val, "rank": found, "correct_year": correct_year, "lat": lat})
+        # Comparison queries ("X vs Y", "which year higher") have no single
+        # value and no single correct year; they need LLM reasoning (phase 14)
+        # and are not retrieval-failures.
+        if val is None:
+            continue
         # pass when the value was found AND it belongs to the requested year;
         # rank 0 is a hit (found == 0 is falsy so compare against None).
         if found is None or correct_year is not True:

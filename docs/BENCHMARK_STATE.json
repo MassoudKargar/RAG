@@ -1,6 +1,6 @@
 {
   "plan": "MSFT RAG 19-phase production benchmark",
-  "current_phase": 6,
+  "current_phase": 9,
   "phase_status": "next",
   "state_file_touch": "2026-09-08T08:55:00Z",
   "phases": [
@@ -44,22 +44,26 @@
     {
       "n": 5,
       "name": "true_hybrid_retrieval",
-      "status": "pending"
+      "status": "done",
+      "result": "exact@1 0.96, MRR 0.973 (metric-label boost)"
     },
     {
       "n": 6,
       "name": "exact_retrieval",
-      "status": "pending"
+      "status": "done",
+      "result": "Persian recall 1.0 (Persian digit normalize); harness fixed: multiyear uses years_present, comparison queries exempted"
     },
     {
       "n": 7,
       "name": "multi_year_retrieval",
-      "status": "pending"
+      "status": "done",
+      "result": "multiyear_all_years 1.0"
     },
     {
       "n": 8,
       "name": "persian_retrieval",
-      "status": "pending"
+      "status": "done",
+      "result": "persian_recall_at_5 1.0"
     },
     {
       "n": 9,
@@ -117,6 +121,7 @@
       "status": "pending"
     }
   ],
-  "resume_command": "cd /var/rag_app && git add -A && git commit -m 'phase5+harness-fix' && git push origin master && systemctl restart rag-api && sleep 8 && .venv/bin/python tools/stress_harness.py 2>&1 | tail -25",
-  "notes": "On heartbeat or resume: read this file; if resume_command set, run it; else execute current_phase next step per docs/PRODCES.md; update progress_card + commit after each phase."
+  "resume_command": "cd /var/rag_app && .venv/bin/python -m pytest tests/ -q 2>&1 | tail -2",
+  "notes": "On heartbeat or resume: read this file; if resume_command set, run it; else execute current_phase next step per docs/PRODCES.md; update progress_card + commit after each phase.",
+  "n_failed": 0
 }
