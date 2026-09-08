@@ -226,6 +226,33 @@ class RAGService:
         words = re.findall(r"[A-Za-z][A-Za-z0-9_-]*", text.lower())
         return [f"{a} {b}" for a, b in zip(words, words[1:])]
 
+    @staticmethod
+    def _canonical_section(section: Optional[str]) -> Optional[str]:
+        """Map a chunk section label (or an Item heading) to a canonical item
+        key ("Item 1", "Item 1A", ...). Returns None when unmappable."""
+        if not section:
+            return None
+        s = section.strip()
+        m = re.match(r"^Item\s+(\d+[a-z]?)", s, re.IGNORECASE)
+        if m:
+            return f"Item {m.group(1).upper()}"
+        l = s.lower()
+        if "risk factor" in l or l.startswith("risk"):
+            return "Item 1A"
+        if "management" in l and ("discussion" in l or "analysis" in l):
+            return "Item 7"
+        if l.startswith("business") or l in ("business", "item 1"):
+            return "Item 1"
+        if "financial statements" in l or "income statement" in l or "balance sheet" in l:
+            return "Item 8"
+        if "controls and procedures" in l:
+            return "Item 9A"
+        if "cybersecurity" in l:
+            return "Item 1C"
+        if "market risk" in l:
+            return "Item 7A"
+        return None
+
     def search_similar_documents(self, embedding: List[float], limit: Optional[int] = None, query: Optional[str] = None, where: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Search for similar documents using the provided embedding.
 
@@ -283,6 +310,7 @@ class RAGService:
             re.compile(p, re.IGNORECASE)
             for p in _metric_label_regexes(query_metric)
         ]
+        query_section = query_analyzer.extract_section(query)
 
         # Stopword-ish financial tokens that appear in almost every chunk and so
         # carry no signal (their IDF is low); we exclude them from the sparse
@@ -314,6 +342,13 @@ class RAGService:
             # holds the exact value — strongest boost.
             if metric_label_hits := sum(1 for rx in metric_label_res if rx.search(dl)):
                 w += 14.0 * metric_label_hits
+            # section intent: when the query asks about a document section
+            # (Risk Factors, MD&A, Business, Financial Statements...), chunks
+            # from that section get a boost. Soft: never a hard filter.
+            if query_section and metas[i]:
+                chunk_section = self._canonical_section(metas[i].get("section"))
+                if chunk_section == query_section:
+                    w += 10.0
             return w
 
         # Primary sort: sparse weight (exact-year + phrase + rare-term signals).
