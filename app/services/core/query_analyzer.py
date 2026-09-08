@@ -50,6 +50,21 @@ _METRIC_MAP = {
     "کل دارایی": "total_assets", "دارایی": "total_assets",
     "cash and cash equivalents": "cash", "cash": "cash",
     "نقد": "cash", "نقد و معادل": "cash", "معادل نقد": "cash",
+    "stockholders' equity": "stockholders_equity", "stockholders equity": "stockholders_equity",
+    "shareholders equity": "stockholders_equity", "total equity": "stockholders_equity",
+    "سرمایه صاحبان سهام": "stockholders_equity", "حقوق صاحبان سهام": "stockholders_equity",
+    "total liabilities": "total_liabilities", "liabilities": "total_liabilities",
+    "بدهی‌ها": "total_liabilities", "کل بدهی‌ها": "total_liabilities",
+    "long-term debt": "long_term_debt", "long term debt": "long_term_debt",
+    "بدهی بلندمدت": "long_term_debt", "بدهی بلند مدت": "long_term_debt",
+    "goodwill": "goodwill", "سرقفلی": "goodwill",
+    "cash from operations": "cash_flow_operating", "cash flow from operations": "cash_flow_operating",
+    "operating cash flow": "cash_flow_operating", "cash from operating": "cash_flow_operating",
+    "جریان نقدی عملیاتی": "cash_flow_operating", "نقد از عملیات": "cash_flow_operating",
+    "cash from investing": "cash_flow_investing", "investing cash flow": "cash_flow_investing",
+    "جریان نقدی سرمایه‌گذاری": "cash_flow_investing",
+    "cash from financing": "cash_flow_financing", "financing cash flow": "cash_flow_financing",
+    "جریان نقدی تامین": "cash_flow_financing", "جریان نقدی تأمین": "cash_flow_financing",
     # other
     "headcount": "headcount", "employees": "headcount", "workforce": "headcount",
     "کارمندان": "headcount", "نیروی کار": "headcount", "کارکنان": "headcount",
@@ -212,6 +227,35 @@ METRIC_LABEL_PATTERNS: Dict[str, List[str]] = {
     ],
     "cash": [
         r"Cash\s+and\s+cash\s+equivalents\s*:",
+    ],
+    "stockholders_equity": [
+        r"Total\s+stockholders['’]?\s+equity\s*:",
+        r"Total\s+(?:equity|stockholders['’]?\s+equity)",
+    ],
+    "total_liabilities": [
+        r"Total\s+liabilities\s*:",
+        r"Total\s+liabilities\s+and\s+stockholders['’]?\s+equity",
+    ],
+    "long_term_debt": [
+        r"Long\s*-?term\s+debt\s*:",
+        r"Long\s*-?term\s+debt",
+    ],
+    "goodwill": [
+        r"Goodwill\s*:",
+        r"Goodwill",
+    ],
+    "cash_flow_operating": [
+        r"Net\s+cash\s+from\s+operations\s*:",
+        r"Net\s+cash\s+provided\s+by\s+operating\s+activities\s*:",
+        r"نقد\s*حاصل\s*از\s*عملیات|جریان\s*نقدی\s*عملیاتی|عملیاتی.*جریان",
+    ],
+    "cash_flow_investing": [
+        r"Net\s+cash\s+(?:from|used\s+in)\s+investing\s*:",
+        r"سرمایه‌گذاری.*جریان\s*نقدی|جریان\s*نقدی\s*سرمایه‌گذاری",
+    ],
+    "cash_flow_financing": [
+        r"Net\s+cash\s+(?:from|used\s+in)\s+financing\s*:",
+        r"تأمین\s*مالی.*جریان|جریان\s*نقدی\s*تأمین",
     ],
 }
 
