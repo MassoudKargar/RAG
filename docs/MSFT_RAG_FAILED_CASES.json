@@ -1,0 +1,199 @@
+[
+  {
+    "test": "exact",
+    "q": "What was Microsoft's total revenue in fiscal year 2023?",
+    "year": 2023,
+    "value": "211915",
+    "rank": null,
+    "severity": "major"
+  },
+  {
+    "test": "exact",
+    "q": "What was Microsoft's total revenue in fiscal year 2024?",
+    "year": 2024,
+    "value": "245122",
+    "rank": null,
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "Microsoft revenue from fiscal 2022 through fiscal 2026",
+    "missing": [
+      2023,
+      2024,
+      2025
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "How did Microsoft's net income change between fiscal 2022 and 2024?",
+    "missing": [
+      2023
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "How did Microsoft's operating income evolve from fiscal 2023 to 2025?",
+    "missing": [
+      2024
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "Compare Microsoft revenue 2024 and 2026",
+    "missing": [
+      2025
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "Microsoft basic EPS 2022 2023 2024 2025",
+    "missing": [
+      2022
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "net income progression Microsoft 2022 2023 2024 2025",
+    "missing": [
+      2022,
+      2023
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "Microsoft's cloud and server revenue trend from fiscal 2023 to fiscal 2025",
+    "missing": [
+      2024
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "multiyear",
+    "q": "How much did Microsoft's total revenue grow between fiscal 2022 and fiscal 2026?",
+    "missing": [
+      2023,
+      2024,
+      2025
+    ],
+    "severity": "major"
+  },
+  {
+    "test": "persian",
+    "q": "سود هر سهم پایه مایکروسافت در سال مالی ۲۰۲۶",
+    "val": "18.00",
+    "rank": null,
+    "severity": "major"
+  },
+  {
+    "test": "persian",
+    "q": "سود خالص مایکروسافت در سال ۲۰۲۶ چقدر بود؟",
+    "val": "133749",
+    "rank": null,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "What was Microsoft's revenue in fiscal year 2023?",
+    "year": 2023,
+    "correct_year": null,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "What was Microsoft's net income in fiscal year 2022?",
+    "year": 2022,
+    "correct_year": null,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Revenue in fiscal 2025",
+    "year": 2025,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "What was Microsoft's operating income in fiscal 2024?",
+    "year": 2024,
+    "correct_year": null,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Microsoft revenue 2026",
+    "year": 2026,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Basic EPS fiscal year 2023",
+    "year": 2023,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Diluted EPS fiscal 2025",
+    "year": 2025,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Net income fiscal 2026",
+    "year": 2026,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Operating income 2023",
+    "year": 2023,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Total revenue fiscal 2022",
+    "year": 2022,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Diluted EPS fiscal 2026",
+    "year": 2026,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Basic EPS fiscal 2025",
+    "year": 2025,
+    "correct_year": true,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Revenue fiscal 2025 vs 2024",
+    "year": null,
+    "correct_year": null,
+    "severity": "major"
+  },
+  {
+    "test": "year",
+    "q": "Which year had higher revenue: 2024 or 2025?",
+    "year": null,
+    "correct_year": null,
+    "severity": "major"
+  }
+]

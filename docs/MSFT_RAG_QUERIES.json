@@ -1,0 +1,455 @@
+{
+  "exact": [
+    [
+      "What was Microsoft's total revenue in fiscal year 2022?",
+      2022,
+      "198270"
+    ],
+    [
+      "Microsoft net income fiscal year 2022",
+      2022,
+      "72738"
+    ],
+    [
+      "Microsoft operating income fiscal year 2022",
+      2022,
+      "83383"
+    ],
+    [
+      "basic earnings per share fiscal year 2022",
+      2022,
+      "9.7"
+    ],
+    [
+      "diluted earnings per share fiscal year 2022",
+      2022,
+      "9.65"
+    ],
+    [
+      "What was Microsoft's total revenue in fiscal year 2023?",
+      2023,
+      "211915"
+    ],
+    [
+      "Microsoft net income fiscal year 2023",
+      2023,
+      "72361"
+    ],
+    [
+      "Microsoft operating income fiscal year 2023",
+      2023,
+      "88523"
+    ],
+    [
+      "basic earnings per share fiscal year 2023",
+      2023,
+      "9.72"
+    ],
+    [
+      "diluted earnings per share fiscal year 2023",
+      2023,
+      "9.68"
+    ],
+    [
+      "What was Microsoft's total revenue in fiscal year 2024?",
+      2024,
+      "245122"
+    ],
+    [
+      "Microsoft net income fiscal year 2024",
+      2024,
+      "88136"
+    ],
+    [
+      "Microsoft operating income fiscal year 2024",
+      2024,
+      "109433"
+    ],
+    [
+      "basic earnings per share fiscal year 2024",
+      2024,
+      "11.86"
+    ],
+    [
+      "diluted earnings per share fiscal year 2024",
+      2024,
+      "11.8"
+    ],
+    [
+      "What was Microsoft's total revenue in fiscal year 2025?",
+      2025,
+      "281724"
+    ],
+    [
+      "Microsoft net income fiscal year 2025",
+      2025,
+      "101832"
+    ],
+    [
+      "Microsoft operating income fiscal year 2025",
+      2025,
+      "128528"
+    ],
+    [
+      "basic earnings per share fiscal year 2025",
+      2025,
+      "13.7"
+    ],
+    [
+      "diluted earnings per share fiscal year 2025",
+      2025,
+      "13.64"
+    ],
+    [
+      "What was Microsoft's total revenue in fiscal year 2026?",
+      2026,
+      "331839"
+    ],
+    [
+      "Microsoft net income fiscal year 2026",
+      2026,
+      "133749"
+    ],
+    [
+      "Microsoft operating income fiscal year 2026",
+      2026,
+      "155237"
+    ],
+    [
+      "basic earnings per share fiscal year 2026",
+      2026,
+      "18.0"
+    ],
+    [
+      "diluted earnings per share fiscal year 2026",
+      2026,
+      "17.95"
+    ]
+  ],
+  "semantic": [
+    "What factors caused Microsoft's cloud business to grow?",
+    "How did Microsoft's AI investments affect its operating results?",
+    "What risks does Microsoft identify in its business operations?",
+    "Which segments contributed to Microsoft's revenue growth?",
+    "How is Microsoft addressing competition in cloud computing?",
+    "What does Microsoft say about its data center and infrastructure spending?",
+    "What are Microsoft's key product categories?",
+    "How does Microsoft describe its research and development efforts?",
+    "What are Microsoft's business segments and their contributions?",
+    "Which factors drove Microsoft's gross margin changes?",
+    "How did Microsoft's Xbox gaming business perform and why?",
+    "What impact did foreign currency have on Microsoft's results?",
+    "What is Microsoft's stance on regulatory and legal matters?",
+    "How does Microsoft describe its sales and marketing strategy?",
+    "How has Microsoft's workforce changed and why?",
+    "What risks relate to Microsoft's supply chain?",
+    "What are Microsoft's commitments regarding responsible AI?",
+    "How did Microsoft's Microsoft 365 business perform?",
+    "What factors affect Microsoft's tax provision and effective rate?",
+    "What does Microsoft disclose about its stock-based compensation?"
+  ],
+  "multiyear": [
+    [
+      "Microsoft revenue from fiscal 2022 through fiscal 2026",
+      [
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "revenue"
+    ],
+    [
+      "How did Microsoft's net income change between fiscal 2022 and 2024?",
+      [
+        2022,
+        2023,
+        2024
+      ],
+      "net income"
+    ],
+    [
+      "Microsoft total revenue comparison 2023 2024 2025",
+      [
+        2023,
+        2024,
+        2025
+      ],
+      "revenue"
+    ],
+    [
+      "How did Microsoft's operating income evolve from fiscal 2023 to 2025?",
+      [
+        2023,
+        2024,
+        2025
+      ],
+      "operating income"
+    ],
+    [
+      "Microsoft diluted EPS trend fiscal years 2022 2023 2024",
+      [
+        2022,
+        2023,
+        2024
+      ],
+      "diluted EPS"
+    ],
+    [
+      "Compare Microsoft revenue 2024 and 2026",
+      [
+        2024,
+        2025,
+        2026
+      ],
+      "revenue"
+    ],
+    [
+      "Microsoft basic EPS 2022 2023 2024 2025",
+      [
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "basic EPS"
+    ],
+    [
+      "net income progression Microsoft 2022 2023 2024 2025",
+      [
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "net income"
+    ],
+    [
+      "Microsoft's cloud and server revenue trend from fiscal 2023 to fiscal 2025",
+      [
+        2023,
+        2024,
+        2025
+      ],
+      "cloud"
+    ],
+    [
+      "How much did Microsoft's total revenue grow between fiscal 2022 and fiscal 2026?",
+      [
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "revenue"
+    ]
+  ],
+  "persian": [
+    [
+      "درآمد مایکروسافت در سال مالی ۲۰۲۴ چقدر بوده است؟",
+      2024,
+      "245122"
+    ],
+    [
+      "درآمد خالص مایکروسافت در سال مالی ۲۰۲۵ چقدر بود؟",
+      2025,
+      "101832"
+    ],
+    [
+      "درآمد عملیاتی مایکروسافت سال مالی ۲۰۲۳",
+      2023,
+      "88523"
+    ],
+    [
+      "سود هر سهم پایه مایکروسافت در سال مالی ۲۰۲۶",
+      2026,
+      "18.00"
+    ],
+    [
+      "سود هر سهم رقیق‌شده در سال مالی ۲۰۲۴",
+      2024,
+      "11.80"
+    ],
+    [
+      "کل درآمد شرکت مایکروسافت در سال مالی ۲۰۲۲",
+      2022,
+      "198270"
+    ],
+    [
+      "سود خالص مایکروسافت در سال ۲۰۲۶ چقدر بود؟",
+      2026,
+      "133749"
+    ],
+    [
+      "مایکروسافت در سال مالی ۲۰۲۵ چه مقدار درآمد داشت؟",
+      2025,
+      "281724"
+    ],
+    [
+      "درآمد عملیاتی در سال مالی ۲۰۲۴",
+      2024,
+      "109433"
+    ],
+    [
+      "سود هر سهم در سال مالی ۲۰۲۵  پایه",
+      2025,
+      "13.70"
+    ],
+    [
+      "Microsoft revenue 2024",
+      2024,
+      "245122"
+    ],
+    [
+      "Azure 2025",
+      2025,
+      ""
+    ],
+    [
+      "net income 2023",
+      2023,
+      "72361"
+    ],
+    [
+      "cloud growth 2024",
+      2024,
+      ""
+    ],
+    [
+      "کارمندان مایکروسافت در سال مالی ۲۰۲۴ چقدر بودند؟",
+      2024,
+      ""
+    ],
+    [
+      "تحقیق و توسعه مایکروسافت در سال ۲۰۲۳ چقدر هزینه داشت؟",
+      2023,
+      ""
+    ],
+    [
+      "درآمد مایکروسافت در سال مالی ۲۰۲۶ به دلار چقدر رسید؟",
+      2026,
+      "331839"
+    ],
+    [
+      "بازدهی سرمایه‌گذاری در هوش مصنوعی چه‌تأثیری روی درآمد مایکروسافت داشت؟",
+      0,
+      ""
+    ],
+    [
+      "بازی ایکس‌باکس چگونه پیش رفت؟",
+      0,
+      ""
+    ],
+    [
+      "مخاطرات اصلی کسب‌وکار مایکروسافت چیست؟",
+      0,
+      ""
+    ]
+  ],
+  "negative": [
+    "What was Microsoft's revenue in fiscal year 2015?",
+    "What was Microsoft's net income in fiscal year 2019?",
+    "What was Microsoft's total revenue in fiscal year 2001?",
+    "What was Microsoft's revenue in fiscal year 1999?",
+    "What was Microsoft's revenue in fiscal year 2017?",
+    "Apple's revenue in fiscal year 2024",
+    "Microsoft's total headcount in 1995",
+    "What was Amazon's net income in 2023?",
+    "What was Microsoft's debt in fiscal 2010?",
+    "What was Google's revenue in 2024?"
+  ],
+  "year": [
+    [
+      "What was Microsoft's revenue in fiscal year 2023?",
+      2023,
+      211915
+    ],
+    [
+      "What was Microsoft's net income in fiscal year 2022?",
+      2022,
+      72738
+    ],
+    [
+      "Revenue in fiscal 2025",
+      2025,
+      281724
+    ],
+    [
+      "What was Microsoft's operating income in fiscal 2024?",
+      2024,
+      109433
+    ],
+    [
+      "Net income fiscal 2024",
+      2024,
+      88136
+    ],
+    [
+      "Microsoft revenue 2026",
+      2026,
+      331839
+    ],
+    [
+      "Basic EPS fiscal year 2023",
+      2023,
+      9.72
+    ],
+    [
+      "Diluted EPS fiscal 2025",
+      2025,
+      13.64
+    ],
+    [
+      "What was operating income in fiscal 2022?",
+      2022,
+      83383
+    ],
+    [
+      "What was net income in fiscal 2025?",
+      2025,
+      101832
+    ],
+    [
+      "Revenue fiscal 2024",
+      2024,
+      245122
+    ],
+    [
+      "Net income fiscal 2026",
+      2026,
+      133749
+    ],
+    [
+      "Operating income 2023",
+      2023,
+      88523
+    ],
+    [
+      "Total revenue fiscal 2022",
+      2022,
+      198270
+    ],
+    [
+      "Diluted EPS fiscal 2026",
+      2026,
+      17.95
+    ],
+    [
+      "Basic EPS fiscal 2025",
+      2025,
+      13.7
+    ],
+    [
+      "Revenue fiscal 2025 vs 2024",
+      null,
+      null
+    ],
+    [
+      "Which year had higher revenue: 2024 or 2025?",
+      null,
+      null
+    ]
+  ]
+}

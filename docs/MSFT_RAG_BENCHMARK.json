@@ -1,0 +1,24 @@
+{
+  "n_exact": 25,
+  "n_semantic": 20,
+  "n_multiyear": 10,
+  "n_persian": 20,
+  "n_negative": 10,
+  "n_year": 18,
+  "n_failed": 26,
+  "exact_recall_at_1": 0.68,
+  "exact_recall_at_5": 0.92,
+  "exact_recall_at_10": 0.92,
+  "mrr": 0.7693333333333334,
+  "semantic_recall_at_5": 1.0,
+  "semantic_recall_at_10": 1.0,
+  "multiyear_all_years": 0.2,
+  "persian_recall_at_5": 0.7,
+  "year_attribution": 0.7222222222222222,
+  "latency": {
+    "p50": 0.15204071998596191,
+    "p95": 0.175048828125,
+    "p99": 0.2182176113128662,
+    "count": 100
+  }
+}
