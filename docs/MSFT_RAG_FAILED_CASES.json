@@ -1,21 +1,5 @@
 [
   {
-    "test": "exact",
-    "q": "What was Microsoft's total revenue in fiscal year 2023?",
-    "year": 2023,
-    "value": "211915",
-    "rank": null,
-    "severity": "major"
-  },
-  {
-    "test": "exact",
-    "q": "What was Microsoft's total revenue in fiscal year 2024?",
-    "year": 2024,
-    "value": "245122",
-    "rank": null,
-    "severity": "major"
-  },
-  {
     "test": "multiyear",
     "q": "Microsoft revenue from fiscal 2022 through fiscal 2026",
     "missing": [

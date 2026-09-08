@@ -1,0 +1,33 @@
+{
+  "commit": "b7571cf",
+  "timestamp": "2026-09-08T05:20:00Z",
+  "environment": {
+    "provider": "openrouter",
+    "embedding_provider": "local",
+    "embedding_model": "intfloat/multilingual-e5-small",
+    "chat_model": "deepseek/deepseek-v4-flash-0731",
+    "corpus": ["microsoft-10k-2022", "microsoft-10k-2023", "microsoft-10k-2024", "microsoft-10k-2025", "microsoft-10k-2026"],
+    "total_chunks": 3387,
+    "retrieval_candidates": 800,
+    "retrieval_k": 10
+  },
+  "retrieval": {
+    "exact_recall_at_1": 0.68,
+    "exact_recall_at_5": 0.92,
+    "exact_recall_at_10": 1.0,
+    "mrr": 0.8057142857142857,
+    "semantic_recall_at_5": 1.0,
+    "semantic_recall_at_10": 1.0,
+    "multiyear_all_years": 0.2,
+    "persian_recall_at_5": 0.7,
+    "year_attribution": 0.7222222222222222
+  },
+  "latency_retrieval_ms": {
+    "p50": 147.27,
+    "p95": 176.74,
+    "p99": 555.56,
+    "count": 100
+  },
+  "n_failed": 24,
+  "notes": "Baseline captured BEFORE retrieval upgrade phases. Multi-year and Persian are the weakest areas; exact recall@1 68%. hr-policy stray doc removed from DB before baseline (was not part of MSFT dataset)."
+}
