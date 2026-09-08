@@ -255,7 +255,9 @@ def main():
                     correct_year = False
                 break
         results["year"].append({"q": q, "year": yr, "value": val, "rank": found, "correct_year": correct_year, "lat": lat})
-        if not found or correct_year is not True:
+        # pass when the value was found AND it belongs to the requested year;
+        # rank 0 is a hit (found == 0 is falsy so compare against None).
+        if found is None or correct_year is not True:
             results["failed"].append({"test": "year", "q": q, "year": yr, "correct_year": correct_year, "severity": "critical" if correct_year is False else "major"})
 
     # ---- general latencies (100 sequential queries total) ----

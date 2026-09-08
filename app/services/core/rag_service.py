@@ -11,7 +11,7 @@ from app.services.providers.avalai_service import AvalaiProvider
 from app.services.providers.openrouter_service import OpenRouterProvider
 from app.services.providers.local_embedding_service import LocalEmbeddingProvider
 from app.services.base import BaseAIProvider
-from app.services.core.query_analyzer import query_analyzer
+from app.services.core.query_analyzer import query_analyzer, metric_label_regexes as _metric_label_regexes
 
 logger = logging.getLogger(__name__)
 
@@ -272,6 +272,11 @@ class RAGService:
 
         query_bigrams = self._query_bigrams(query)
         query_years = self._extract_years(query)
+        query_metric = query_analyzer.extract_metric(query)
+        metric_label_res = [
+            re.compile(p, re.IGNORECASE)
+            for p in _metric_label_regexes(query_metric)
+        ]
 
         # Stopword-ish financial tokens that appear in almost every chunk and so
         # carry no signal (their IDF is low); we exclude them from the sparse
@@ -279,8 +284,6 @@ class RAGService:
         _NOISE = {"net", "income", "fiscal", "year", "microsoft",
                   "operating", "per", "share", "basic", "diluted", "expense"}
 
-        # sparse ranking driven by rare terms (year target + identifiers) +
-        # phrase matches; RRF fuses it with dense dist robustly.
         def sparse_weight(i: int) -> float:
             dt = self._lexical_tokens(docs[i])
             hits = query_tokens & dt
@@ -300,6 +303,11 @@ class RAGService:
             strong_phrases = [p for p in query_bigrams if p not in ("fiscal year", "year fiscal", "income fiscal", "revenue fiscal")]
             phrase_hits = sum(1 for p in strong_phrases if p in dl)
             w += phrase_hits * 6.0
+            # metric table-row label: the chunk that actually contains the
+            # table row for the queried metric (e.g. "Revenue:", "Diluted:")
+            # holds the exact value — strongest boost.
+            if metric_label_hits := sum(1 for rx in metric_label_res if rx.search(dl)):
+                w += 14.0 * metric_label_hits
             return w
 
         # Primary sort: sparse weight (exact-year + phrase + rare-term signals).

@@ -1,6 +1,6 @@
 {
   "plan": "MSFT RAG 19-phase production benchmark",
-  "current_phase": 5,
+  "current_phase": 6,
   "phase_status": "next",
   "state_file_touch": "2026-09-08T08:55:00Z",
   "phases": [
@@ -38,7 +38,8 @@
     {
       "n": 4,
       "name": "year_aware_retrieval",
-      "status": "pending"
+      "status": "done",
+      "result": "exact@1 0.68->0.96, MRR 0.806->0.973, persian 0.7->0.75, year_attribution 0.722->0.889 (metric-label boost)"
     },
     {
       "n": 5,
@@ -116,6 +117,6 @@
       "status": "pending"
     }
   ],
-  "resume_command": "cd /var/rag_app && git add -A && git commit -m 'phase3: query analyzer' && git push origin master",
+  "resume_command": "cd /var/rag_app && git add -A && git commit -m 'phase5+harness-fix' && git push origin master && systemctl restart rag-api && sleep 8 && .venv/bin/python tools/stress_harness.py 2>&1 | tail -25",
   "notes": "On heartbeat or resume: read this file; if resume_command set, run it; else execute current_phase next step per docs/PRODCES.md; update progress_card + commit after each phase."
 }

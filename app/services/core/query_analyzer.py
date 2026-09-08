@@ -172,4 +172,50 @@ class QueryAnalyzer:
         }
 
 
+# Table-row labels per canonical metric. When a query names a financial
+# metric, a chunk that contains the corresponding table row label ("Revenue:",
+# "Net income:", "Diluted:") carries the most exact evidence — used by the
+# retrieval re-ranker as a strong lexical boost.
+# Order matters: longer/more specific labels first.
+METRIC_LABEL_PATTERNS: Dict[str, List[str]] = {
+    "revenue": [
+        r"(?<!Total\s)Revenue\s*:",
+        r"Total\s+revenue\s*:",
+        r"Product\s+and\s+service\s+revenue\s*:",
+    ],
+    "net_income": [
+        r"Net\s+income\s*:",
+        r"Net\s+earnings\s*:",
+    ],
+    "operating_income": [
+        r"Operating\s+income\s*:",
+    ],
+    "gross_margin": [
+        r"Gross\s+margin\s*:",
+        r"Gross\s+profit\s*:",
+    ],
+    "basic_eps": [
+        r"Basic\s*:",
+        r"Basic\s+earnings\s+per\s+share",
+    ],
+    "diluted_eps": [
+        r"Diluted\s*:",
+        r"Diluted\s+earnings\s+per\s+share",
+    ],
+    "total_assets": [
+        r"Total\s+assets\s*:",
+    ],
+    "cash": [
+        r"Cash\s+and\s+cash\s+equivalents\s*:",
+    ],
+}
+
+
+def metric_label_regexes(metric: Optional[str]) -> List[str]:
+    """Return the table-row label regexes for a canonical metric."""
+    if not metric:
+        return []
+    return METRIC_LABEL_PATTERNS.get(metric, [])
+
+
 query_analyzer = QueryAnalyzer()
