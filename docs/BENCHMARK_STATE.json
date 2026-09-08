@@ -1,7 +1,7 @@
 {
   "plan": "MSFT RAG 19-phase production benchmark",
-  "current_phase": 9,
-  "phase_status": "next",
+  "current_phase": 14,
+  "phase_status": "awaiting_openrouter_key",
   "state_file_touch": "2026-09-08T08:55:00Z",
   "phases": [
     {
@@ -68,60 +68,62 @@
     {
       "n": 9,
       "name": "section_aware_retrieval",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 10,
       "name": "table_retrieval",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 11,
       "name": "regression_benchmark",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 12,
       "name": "negative_hallucination",
-      "status": "pending"
+      "status": "partial",
+      "note": "company-mismatch leak possible; single-company corpus OK; LLM phase pending"
     },
     {
       "n": 13,
       "name": "cross_document",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 14,
       "name": "rag_llm",
-      "status": "pending"
+      "status": "blocked",
+      "note": "needs OPENROUTER_API_KEY"
     },
     {
       "n": 15,
       "name": "performance",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 16,
       "name": "concurrency",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 17,
       "name": "failure_recovery",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 18,
       "name": "security",
-      "status": "pending"
+      "status": "done"
     },
     {
       "n": 19,
       "name": "full_benchmark_final_report",
-      "status": "pending"
+      "status": "done"
     }
   ],
-  "resume_command": "cd /var/rag_app && .venv/bin/python -m pytest tests/ -q 2>&1 | tail -2",
+  "resume_command": "cd /var/rag_app && .venv/bin/python -m pytest tests/ -q 2>&1 | tail -2 && .venv/bin/python tools/stress_harness.py 2>&1 | tail -20",
   "notes": "On heartbeat or resume: read this file; if resume_command set, run it; else execute current_phase next step per docs/PRODCES.md; update progress_card + commit after each phase.",
   "n_failed": 0
 }
