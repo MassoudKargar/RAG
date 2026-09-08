@@ -1,0 +1,22 @@
+{
+  "total_count": 3281,
+  "per_doc": {
+    "microsoft-10k-2022": 716,
+    "microsoft-10k-2023": 680,
+    "microsoft-10k-2024": 684,
+    "microsoft-10k-2025": 593,
+    "microsoft-10k-2026": 608
+  },
+  "issue_counts": {},
+  "issues_sample": {},
+  "acceptance": {
+    "count_matches_sum": true,
+    "only_expected_docs": true,
+    "fiscal_year_valid_all": true,
+    "chunk_id_format_all": true,
+    "section_all": true,
+    "page_all": true,
+    "no_empty_documents": true,
+    "years_present_sane": true
+  }
+}
