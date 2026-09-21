@@ -101,7 +101,7 @@ async def analyze_query(
             "response": "I'm sorry, I'm having trouble processing your request. Please try again later.",
             "used_rag_context": False,
             "confidence": 0.1,
-            "fallback_reason": str(e),
+            "fallback_reason": "internal_error",
             "metadata": {"analysis_method": "error_handling"}
         }
 
