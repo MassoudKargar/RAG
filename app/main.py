@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, Header, HTTPException
-from app.routes import vector_db, chat
+from app.routes import vector_db, chat, admin_routes
 from app.services.analysis_service import get_analysis_service, SmartAnalysisService
 from app.services.providers.mcp_service import get_mcp_provider, MCPProvider
 import logging
@@ -58,6 +58,7 @@ async def startup_event():
 # Include routers with tags
 app.include_router(vector_db.router, prefix="/v1/vector_db", tags=["Vector Database"])
 app.include_router(chat.router, prefix="/v1", tags=["Chat"])
+app.include_router(admin_routes.router)
 
 
 @app.get("/", tags=["Root"])
