@@ -13,3 +13,6 @@ chroma_db/
 
 # Documentation (FA files)
 docs/fa/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
