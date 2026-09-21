@@ -1,19 +1,28 @@
 ![Maux RAG API Banner](static/banner.png)
 
-<div align="center">
+<h1 align="center">Maux RAG API</h1>
 
-# Maux RAG API
+<p align="center">
+  <strong>OpenAI-compatible RAG API with persistent ChromaDB, hybrid retrieval, Persian-aware query analysis, and pluggable chat/embedding providers.</strong>
+</p>
 
-**OpenAI-compatible RAG API with persistent ChromaDB, hybrid retrieval, Persian-aware query analysis, and pluggable chat/embedding providers.**
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-API-009688?logo=fastapi&logoColor=white">
+  <img alt="ChromaDB" src="https://img.shields.io/badge/Vector%20DB-ChromaDB-orange">
+  <img alt="OpenAI compatible" src="https://img.shields.io/badge/API-OpenAI%20compatible-412991?logo=openai&logoColor=white">
+</p>
 
-[فارسی](#معرفی) · [English](#english) · [API Reference](#مرجع-api) · [Benchmarks](#بنچمارک-و-تستها)
-
-</div>
+<p align="center">
+  <a href="#persian">فارسی</a> ·
+  <a href="#english">English</a> ·
+  <a href="#api-reference-fa">API Reference</a> ·
+  <a href="#benchmarks-fa">Benchmarks</a>
+</p>
 
 ---
 
-<div dir="rtl">
-
+<a id="persian"></a>
 ## معرفی
 
 Maux RAG API یک سرویس مبتنی بر FastAPI برای ساخت سامانه‌های **Retrieval-Augmented Generation** است. این پروژه اسناد متنی را به چانک‌های ساختاریافته تقسیم می‌کند، embedding آن‌ها را در ChromaDB نگه می‌دارد، مرتبط‌ترین بخش‌ها را با ترکیب جست‌وجوی برداری و بازرتبه‌بندی واژگانی پیدا می‌کند و سپس context بازیابی‌شده را به مدل زبانی می‌فرستد.
@@ -292,6 +301,7 @@ curl -X POST \
 
 پاسخ علاوه بر متن شامل `used_rag_context`، `confidence`، `fallback_reason` و `metadata` است.
 
+<a id="api-reference-fa"></a>
 ## مرجع API
 
 تمام endpointهای زیر به هدر `X-API-Key` نیاز دارند.
@@ -322,6 +332,7 @@ pipeline فعلی فقط یک similarity search ساده نیست:
 5. فیلترهای سال و corpus از پاسخ‌های خارج از محدوده جلوگیری می‌کنند.
 6. حداکثر `RAG_FINAL_K` چانک به context مدل زبانی فرستاده می‌شود.
 
+<a id="benchmarks-fa"></a>
 ## بنچمارک و تست‌ها
 
 آخرین گزارش ثبت‌شده در repository برای retrieval-only:
@@ -388,10 +399,9 @@ docs/                    # گزارش‌ها و نتایج benchmark
 
 Issue و Pull Request پذیرفته می‌شود. تغییرات retrieval را همراه با تست و benchmark ارسال کنید و هیچ secret یا artifact زمان اجرا مانند `.env`، `chroma_db/` و `__pycache__/` را commit نکنید.
 
-</div>
-
 ---
 
+<a id="english"></a>
 ## English
 
 Maux RAG API is a FastAPI-based, OpenAI-compatible RAG service with persistent ChromaDB storage, deterministic structure-aware chunking, hybrid dense/lexical retrieval, Persian-aware query analysis, streaming responses, and independently configurable chat and embedding providers.
