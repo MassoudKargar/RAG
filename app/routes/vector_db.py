@@ -7,6 +7,46 @@ from typing import List, Optional
 router = APIRouter()
 
 
+def normalize_search_results(
+    ids: Optional[List[str]],
+    documents: Optional[List[Optional[str]]],
+    metadatas: Optional[List[Optional[dict]]],
+    distances: Optional[List[Optional[float]]],
+) -> List[SearchResult]:
+    """Build validated SearchResult objects from raw Chroma rows.
+
+    Chroma can return null/empty document entries for edge-case queries (for
+    example short or hyphenated identifiers). Those must never fail response
+    validation, never be converted into the literal string "None", and must
+    never be returned as chunks. Invalid entries are skipped while the
+    remaining valid entries keep their original index alignment, so mixed
+    results still return the valid ones. An all-invalid response is an empty
+    list (HTTP 200).
+    """
+    ids = ids or []
+    documents = documents or []
+    metadatas = metadatas or []
+    distances = distances or []
+    out: List[SearchResult] = []
+    for i in range(len(ids)):
+        text = documents[i] if i < len(documents) else None
+        meta = metadatas[i] if i < len(metadatas) else None
+        dist = distances[i] if i < len(distances) else None
+        # Skip null, non-string and whitespace-only chunks entirely.
+        if not isinstance(text, str) or not text.strip():
+            continue
+        out.append(SearchResult(id=i, text=text, metadata=meta, score=dist))
+    return out
+
+
+def _first_column(results: dict, key: str) -> list:
+    """Return the first result-column for a Chroma key, or [] when absent."""
+    col = results.get(key) or []
+    if col:
+        col = col[0] if isinstance(col[0], list) else col
+    return col or []
+
+
 # this route is used to initialize the collection in the vector database, you need to call it before you can use the other routes
 @router.post("/initialize_collection", status_code=201)
 async def initialize_collection():
@@ -71,15 +111,14 @@ async def search_documents(query: Query, limit: Optional[int] = None):
             embedding, limit=limit, query=query.prompt,
             where=rag_service.year_filter(query.prompt)
         )
-        search_results = []
-        for i in range(len(results['ids'][0])):
-            search_results.append(SearchResult(
-                id=i,  # Using index as id instead of the UUID
-                text=results['documents'][0][i],
-                metadata=results['metadatas'][0][i],
-                score=results['distances'][0][i] if results.get('distances') else None
-            ))
-        return search_results
+        return normalize_search_results(
+            ids=_first_column(results, "ids"),
+            documents=_first_column(results, "documents"),
+            metadatas=_first_column(results, "metadatas"),
+            distances=_first_column(results, "distances"),
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
